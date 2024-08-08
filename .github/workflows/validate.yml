@@ -72,7 +72,7 @@ jobs:
         name: Upload Artifacts
         if: always()
         with:
-          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ runner.os }}-${{ matrix.build-target }}-Artifacts'
+          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ runner.os }}-${{ matrix.build-target }}-${{ matrix.unity-version }}-Artifacts'
           path: |
             ${{ env.UNITY_PROJECT_PATH }}/**/*.log
             ${{ env.UNITY_PROJECT_PATH }}/Builds/${{ matrix.build-target }}/
