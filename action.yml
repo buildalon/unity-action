@@ -1,0 +1,28 @@
+name: Buildalon Unity Action
+description: A Github Action to execute Unity Editor command line arguments.
+branding:
+  icon: 'cpu'
+  color: 'red'
+inputs:
+  editor-path:
+    description: 'Path to the Unity Editor. If not provided, the action will use the environment variable UNITY_EDITOR_PATH.'
+    required: false
+  project-path:
+    description: 'Path to the Unity project. If not provided, the action will use the environment variable UNITY_PROJECT_PATH.'
+    required: false
+  build-target:
+    description: 'Unity build target.'
+    required: false
+    default: ''
+  args:
+    description: 'Unity Editor cli arguments.'
+    required: false
+    default: '-quit -batchmode -nographics'
+  log-name:
+    description: 'Name of the Unity log file.'
+    required: false
+    default: 'Unity'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+  post: 'dist/index.js'
