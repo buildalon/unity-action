@@ -26166,12 +26166,13 @@ async function ValidateInputs() {
     if (inputArgs) {
         args.push(...inputArgs.split(` `));
     }
+    let projectPath = undefined;
     if (!args.includes(`-projectPath`) &&
         !args.includes(`-createManualActivationFile`) &&
         !args.includes(`-manualLicenseFile`) &&
         !args.includes(`-returnLicense`) &&
         !args.includes(`-serial`)) {
-        const projectPath = core.getInput(`project-path`) || process.env.UNITY_PROJECT_PATH;
+        projectPath = core.getInput(`project-path`) || process.env.UNITY_PROJECT_PATH;
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
@@ -26180,7 +26181,9 @@ async function ValidateInputs() {
         args.push(`-projectPath`, projectPath);
     }
     if (!args.includes(`-logFile`)) {
-        const logsDirectory = path.join(projectPath, `Builds`, `Logs`);
+        const logsDirectory = projectPath !== undefined
+            ? path.join(projectPath, `Builds`, `Logs`)
+            : path.join(env.process.GITHUB_WORKSPACE, `Logs`);
         try {
             await fs.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
@@ -28163,7 +28166,6 @@ const main = async () => {
     try {
         if (!IS_POST) {
             const [editor, args] = await ValidateInputs();
-            core.info(`[command]"${editor}" ${args.join(' ')}`);
             await exec.exec(editor, args);
         } else {
             await Cleanup();
