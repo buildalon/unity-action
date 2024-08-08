@@ -10,9 +10,15 @@ const main = async () => {
         if (!IS_POST) {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
-            const exitCode = await exec.exec(editor, args, {
+            const exitCode = await exec.exec(`"${editor}"`, args, {
                 listeners: {
                     stdline: (data) => {
+                        core.info(data);
+                    },
+                    stdout: (data) => {
+                        core.info(data);
+                    },
+                    stderr: (data) => {
                         core.info(data);
                     }
                 },
