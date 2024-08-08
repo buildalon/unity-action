@@ -26221,6 +26221,7 @@ const path = __nccwpck_require__(1017);
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 
 async function Cleanup() {
+    core.info(`Cleaning up workspace...`);
     const buildsDirectory = path.join(WORKSPACE, 'Builds');
     const logDirectory = path.join(WORKSPACE, 'Logs');
     await Promise.all([
@@ -28159,7 +28160,7 @@ const IS_POST = !!core.getState('isPost');
 
 const main = async () => {
     try {
-        if (IS_POST) {
+        if (!IS_POST) {
             const [editor, args] = await ValidateInputs();
             core.info(`[command]"${editor}" ${args.join(' ')}`);
             await exec.exec(editor, args);

@@ -6,6 +6,7 @@ const path = require('path');
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 
 async function Cleanup() {
+    core.info(`Cleaning up workspace...`);
     const buildsDirectory = path.join(WORKSPACE, 'Builds');
     const logDirectory = path.join(WORKSPACE, 'Logs');
     await Promise.all([
