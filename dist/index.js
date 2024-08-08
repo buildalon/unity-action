@@ -26175,17 +26175,17 @@ async function ValidateInputs() {
     }
     let projectPath = undefined;
     if (!args.includes(`-projectPath`) &&
-        !args.includes(`-createManualActivationFile`) &&
-        !args.includes(`-manualLicenseFile`) &&
-        !args.includes(`-returnLicense`) &&
-        !args.includes(`-serial`)) {
+        (!args.includes(`-createManualActivationFile`) &&
+            !args.includes(`-manualLicenseFile`) &&
+            !args.includes(`-returnLicense`) &&
+            !args.includes(`-serial`))) {
         projectPath = core.getInput(`project-path`) || process.env.UNITY_PROJECT_PATH;
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.info(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, `"${projectPath}"`);
+        args.push(`-projectPath`, projectPath);
     }
     if (!args.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
@@ -26194,13 +26194,14 @@ async function ValidateInputs() {
         try {
             await fs.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
+            core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
             await fs.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`, { required: true });
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{3}/, ``); // yyyyMMddTHHmmss
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.info(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `"${logPath}"`);
+        args.push(`-logFile`, logPath);
     }
     core.info(`Args:`);
     for (const arg of args) {
