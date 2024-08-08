@@ -14,6 +14,13 @@ async function ValidateInputs() {
     if (inputArgs) {
         args.push(...inputArgs.split(` `));
     }
+    if (!args.includes(`-buildTarget`)) {
+        const buildTarget = core.getInput(`build-target`);
+        if (buildTarget) {
+            core.info(`Build Target:\n  > ${buildTarget}`);
+            args.push(`-buildTarget`, buildTarget);
+        }
+    }
     let projectPath = undefined;
     if (!args.includes(`-projectPath`) &&
         !args.includes(`-createManualActivationFile`) &&
@@ -43,16 +50,9 @@ async function ValidateInputs() {
         core.info(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, `"${logPath}"`);
     }
-    if (!args.includes(`-buildTarget`)) {
-        const buildTarget = core.getInput(`build-target`);
-        if (buildTarget) {
-            core.info(`Build Target:\n  > ${buildTarget}`);
-            args.push(`-buildTarget`, buildTarget);
-        }
-    }
     core.info(`Args:`);
     for (const arg of args) {
-        core.info(`  > "${arg}"`);
+        core.info(`  > ${arg}`);
     }
     return [editorPath, args];
 }
