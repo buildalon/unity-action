@@ -10,7 +10,19 @@ const main = async () => {
         if (!IS_POST) {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
-            await exec.exec(`"${editor}"`, args);
+            const exitCode = await exec.exec(editor, args, {
+                listeners: {
+                    stdline: (data) => {
+                        core.info(data);
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true,
+                windowsVerbatimArguments: process.platform === 'win32'
+            });
+            if (exitCode !== 0) {
+                throw Error(`Unity failed with exit code ${exitCode}`);
+            }
         } else {
             await Cleanup();
         }

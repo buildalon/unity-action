@@ -30,9 +30,13 @@ async function ValidateInputs() {
         inputArgs.includes(`-createManualActivationFile`) ||
         inputArgs.includes(`-manualLicenseFile`) ||
         inputArgs.includes(`-returnLicense`) ||
-        inputArgs.includes(`-serial`));
+        inputArgs.includes(`-serial`) ||
+        inputArgs.includes(`-createProject `));
     if (!inputArgs.includes(`-projectPath`) && needsProjectPath) {
         projectPath = core.getInput(`project-path`) || UNITY_PROJECT_PATH;
+        if (process.platform === `win32` && projectPath.endsWith(`\\`)) {
+            projectPath = projectPath.slice(0, -1);
+        }
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
@@ -43,22 +47,22 @@ async function ValidateInputs() {
     if (inputArgs) {
         args.push(...inputArgs);
     }
-    // if (!inputArgs.includes(`-logFile`)) {
-    //     const logsDirectory = projectPath !== undefined
-    //         ? path.join(projectPath, `Builds`, `Logs`)
-    //         : path.join(WORKSPACE, `Logs`);
-    //     try {
-    //         await fs.access(logsDirectory, fs.constants.R_OK);
-    //     } catch (error) {
-    //         core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
-    //         await fs.mkdir(logsDirectory, { recursive: true });
-    //     }
-    //     const logName = core.getInput(`log-name`, { required: true });
-    //     const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{3}/, ``); // yyyyMMddTHHmmss
-    //     const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
-    //     core.info(`Log File Path:\n  > "${logPath}"`);
-    //     args.push(`-logFile`, `"${logPath}"`);
-    // }
+    if (!inputArgs.includes(`-logFile`)) {
+        const logsDirectory = projectPath !== undefined
+            ? path.join(projectPath, `Builds`, `Logs`)
+            : path.join(WORKSPACE, `Logs`);
+        try {
+            await fs.access(logsDirectory, fs.constants.R_OK);
+        } catch (error) {
+            core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
+            await fs.mkdir(logsDirectory, { recursive: true });
+        }
+        const logName = core.getInput(`log-name`, { required: true });
+        const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{3}/, ``); // yyyyMMddTHHmmss
+        const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
+        core.info(`Log File Path:\n  > "${logPath}"`);
+        args.push(`-logFile`, logPath);
+    }
     core.info(`Args:`);
     for (const arg of args) {
         core.info(`  > ${arg}`);
