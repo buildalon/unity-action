@@ -8,6 +8,7 @@ const IS_POST = !!core.getState('isPost');
 const main = async () => {
     try {
         if (!IS_POST) {
+            core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
             await exec.exec(`"${editor}"`, args);
         } else {
