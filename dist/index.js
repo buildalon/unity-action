@@ -26190,7 +26190,7 @@ async function ValidateInputs() {
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.info(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, `"${projectPath}"`);
+        args.push(`-projectPath`, projectPath);
     }
     if (inputArgs) {
         args.push(...inputArgs);
