@@ -1,5 +1,6 @@
 const core = require("@actions/core");
 const fs = require("fs").promises;
+const path = require("path");
 
 async function ValidateInputs() {
     const editorPath = core.getInput(`editor-path`) || process.env.UNITY_EDITOR_PATH;

@@ -26152,6 +26152,7 @@ exports["default"] = _default;
 
 const core = __nccwpck_require__(2186);
 const fs = (__nccwpck_require__(7147).promises);
+const path = __nccwpck_require__(1017);
 
 async function ValidateInputs() {
     const editorPath = core.getInput(`editor-path`) || process.env.UNITY_EDITOR_PATH;
