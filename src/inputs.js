@@ -22,11 +22,12 @@ async function ValidateInputs() {
         }
     }
     let projectPath = undefined;
-    if (!args.includes(`-projectPath`) &&
-        (!args.includes(`-createManualActivationFile`) &&
-            !args.includes(`-manualLicenseFile`) &&
-            !args.includes(`-returnLicense`) &&
-            !args.includes(`-serial`))) {
+    const needsProjectPath = !(
+        args.includes(`-createManualActivationFile`) ||
+        args.includes(`-manualLicenseFile`) ||
+        args.includes(`-returnLicense`) ||
+        args.includes(`-serial`));
+    if (!args.includes(`-projectPath`) && needsProjectPath) {
         projectPath = core.getInput(`project-path`) || process.env.UNITY_PROJECT_PATH;
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
