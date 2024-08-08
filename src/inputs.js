@@ -2,8 +2,12 @@ const core = require("@actions/core");
 const fs = require("fs").promises;
 const path = require("path");
 
+const WORKSPACE = process.env.GITHUB_WORKSPACE;
+const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
+const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
+
 async function ValidateInputs() {
-    const editorPath = core.getInput(`editor-path`) || process.env.UNITY_EDITOR_PATH;
+    const editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
@@ -28,18 +32,18 @@ async function ValidateInputs() {
         args.includes(`-returnLicense`) ||
         args.includes(`-serial`));
     if (!args.includes(`-projectPath`) && needsProjectPath) {
-        projectPath = core.getInput(`project-path`) || process.env.UNITY_PROJECT_PATH;
+        projectPath = core.getInput(`project-path`) || UNITY_PROJECT_PATH;
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.info(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, projectPath);
+        args.push(`-projectPath`, `"${projectPath}"`);
     }
     if (!args.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
             ? path.join(projectPath, `Builds`, `Logs`)
-            : path.join(env.process.GITHUB_WORKSPACE, `Logs`);
+            : path.join(WORKSPACE, `Logs`);
         try {
             await fs.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
