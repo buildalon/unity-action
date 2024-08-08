@@ -9,7 +9,7 @@ const main = async () => {
     try {
         if (!IS_POST) {
             const [editor, args] = await ValidateInputs();
-            await exec.exec(editor, args);
+            await exec.exec(`"${editor}"`, args);
         } else {
             await Cleanup();
         }

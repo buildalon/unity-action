@@ -26,7 +26,7 @@ async function ValidateInputs() {
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.info(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, projectPath);
+        args.push(`-projectPath`, `"${projectPath}"`);
     }
     if (!args.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
@@ -41,7 +41,7 @@ async function ValidateInputs() {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{3}/, ``); // yyyyMMddTHHmmss
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.info(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, logPath);
+        args.push(`-logFile`, `"${logPath}"`);
     }
     if (!args.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
