@@ -66,3 +66,11 @@ jobs:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
+      - uses: actions/upload-artifact@v4
+        name: Upload Artifacts
+        if: always()
+        with:
+          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ runner.os }}-${{ matrix.build-target }}-Artifacts'
+          path: |
+            ${{ env.UNITY_PROJECT_PATH }}/**/*.log
+            ${{ env.UNITY_PROJECT_PATH }}/Builds/${{ matrix.build-target }}/
