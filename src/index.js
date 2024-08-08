@@ -9,6 +9,7 @@ const main = async () => {
     try {
         if (IS_POST) {
             const [editor, args] = await ValidateInputs();
+            core.info(`[command]"${editor}" ${args.join(' ')}`);
             await exec.exec(editor, args);
         } else {
             await Cleanup();
