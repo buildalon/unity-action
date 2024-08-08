@@ -14,11 +14,11 @@ async function ValidateInputs() {
     await fs.access(editorPath, fs.constants.X_OK);
     core.info(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
-    const inputArgs = core.getInput(`args`);
-    if (inputArgs) {
-        args.push(...inputArgs.split(` `));
-    }
-    if (!args.includes(`-buildTarget`)) {
+    const inputArgsString = core.getInput(`args`);
+    const inputArgs = inputArgsString !== undefined
+        ? inputArgsString.split(` `)
+        : [];
+    if (!inputArgs.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
         if (buildTarget) {
             core.info(`Build Target:\n  > ${buildTarget}`);
@@ -27,11 +27,11 @@ async function ValidateInputs() {
     }
     let projectPath = undefined;
     const needsProjectPath = !(
-        args.includes(`-createManualActivationFile`) ||
-        args.includes(`-manualLicenseFile`) ||
-        args.includes(`-returnLicense`) ||
-        args.includes(`-serial`));
-    if (!args.includes(`-projectPath`) && needsProjectPath) {
+        inputArgs.includes(`-createManualActivationFile`) ||
+        inputArgs.includes(`-manualLicenseFile`) ||
+        inputArgs.includes(`-returnLicense`) ||
+        inputArgs.includes(`-serial`));
+    if (!inputArgs.includes(`-projectPath`) && needsProjectPath) {
         projectPath = core.getInput(`project-path`) || UNITY_PROJECT_PATH;
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
@@ -40,7 +40,10 @@ async function ValidateInputs() {
         core.info(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, `"${projectPath}"`);
     }
-    if (!args.includes(`-logFile`)) {
+    if (inputArgs) {
+        args.push(...inputArgs);
+    }
+    if (!inputArgs.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
             ? path.join(projectPath, `Builds`, `Logs`)
             : path.join(WORKSPACE, `Logs`);
