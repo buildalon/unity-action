@@ -27469,7 +27469,6 @@ const main = async () => {
             await new Promise((resolve, reject) => {
                 unityProcess.on('exit', (code) => {
                     if (code === 0) {
-                        core.info(`Unity exited with code ${code}`);
                         resolve();
                     } else {
                         reject(`Unity exited with code ${code}`);
