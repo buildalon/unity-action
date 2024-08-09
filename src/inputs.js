@@ -57,26 +57,7 @@ async function ValidateInputs() {
         args.push(...inputArgs);
     }
     if (!inputArgs.includes(`-logFile`)) {
-        const logsDirectory = projectPath !== undefined
-            ? path.join(projectPath, `Builds`, `Logs`)
-            : path.join(WORKSPACE, `Logs`);
-        try {
-            await fs.access(logsDirectory, fs.constants.R_OK);
-        } catch (error) {
-            core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
-            await fs.mkdir(logsDirectory, { recursive: true });
-        }
-        const logName = core.getInput(`log-name`, { required: true });
-        const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
-        const relativePath = logsDirectory.replace(WORKSPACE, ``);
-        const logPath = path.join(`.`, relativePath, `${logName}-${timestamp}.log`);
-        core.debug(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `-`, logPath);
-    } else {
-        const logFileIndex = args.indexOf(`-logFile`);
-        if (logFileIndex !== -1 && args[logFileIndex + 1] !== `-`) {
-            args.splice(logFileIndex + 1, 0, `-`);
-        }
+        args.push(`-logFile`, `/dev/stdout`);
     }
     core.debug(`Args:`);
     for (const arg of args) {
