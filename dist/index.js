@@ -26242,12 +26242,13 @@ module.exports = { ValidateInputs };
 const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
 const io = __nccwpck_require__(7436);
+const path = __nccwpck_require__(1017);
 
 async function ExecUnity(editorPath, args) {
     var pwsh = await io.which("pwsh", true);
-    var unity = path.resolve(__dirname, 'unity.ps1');
+    var unity = __nccwpck_require__.ab + "unity.ps1";
     core.info(`[command]${editorPath} ${args.join(' ')}`);
-    var exitCode = await exec.exec(`"${pwsh}"`, [`-Command`, unity, editorPath, ...args], {
+    var exitCode = await exec.exec(`"${pwsh}"`, [`-Command`, __nccwpck_require__.ab + "unity.ps1", editorPath, ...args], {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();

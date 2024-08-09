@@ -1,6 +1,7 @@
 const exec = require('@actions/exec');
 const core = require('@actions/core');
 const io = require('@actions/io');
+const path = require('path');
 
 async function ExecUnity(editorPath, args) {
     var pwsh = await io.which("pwsh", true);
