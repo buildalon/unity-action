@@ -26203,14 +26203,7 @@ async function ValidateInputs() {
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
-        switch (process.platform) {
-            case `win32`:
-                args.push(`-projectPath`, `"${projectPath}"`);
-                break;
-            default:
-                args.push(`-projectPath`, projectPath);
-                break;
-        }
+        args.push(`-projectPath`, projectPath);
     }
     if (inputArgs) {
         args.push(...inputArgs);
@@ -26229,19 +26222,7 @@ async function ValidateInputs() {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
-        switch (process.platform) {
-            case `win32`:
-                args.push(`-logFile`, `-`, `"${logPath}"`);
-                break;
-            default:
-                args.push(`-logFile`, `-`, logPath);
-                break;
-        }
-    } else {
-        const logFileIndex = args.indexOf(`-logFile`);
-        if (logFileIndex !== -1 && args[logFileIndex + 1] !== `-`) {
-            args.splice(logFileIndex + 1, 0, `-`);
-        }
+        args.push(`-logFile`, logPath);
     }
     core.debug(`Args:`);
     for (const arg of args) {
@@ -26260,65 +26241,23 @@ module.exports = { ValidateInputs };
 
 const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
-const { spawn } = __nccwpck_require__(2081);
+const io = __nccwpck_require__(7436);
 
 async function ExecUnity(editorPath, args) {
-    let exitCode = undefined;
-    switch (process.platform) {
-        case 'linux':
-            core.info(`[command]xvfb-run --auto-servernum "${editorPath}" ${args.join(' ')}`);
-            exitCode = await exec.exec('xvfb-run', ['--auto-servernum', editorPath, ...args], {
-                listeners: {
-                    stdline: (data) => {
-                        const line = data.toString();
-                        if (line && line.trim().length > 0) {
-                            core.info(data);
-                        }
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
-            });
-            break;
-        case 'darwin':
-            core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-            exitCode = await exec.exec(`"${editorPath}"`, args, {
-                listeners: {
-                    stdline: (data) => {
-                        const line = data.toString();
-                        if (line && line.trim().length > 0) {
-                            core.info(data);
-                        }
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
-            });
-            break;
-        case 'win32':
-            core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-            const unityProcess = spawn(`"${editorPath}"`, args, {
-                shell: true,
-                stdio: ['ignore', 'pipe', 'pipe']
-            });
-            unityProcess.stdout.setEncoding('utf8');
-            unityProcess.stderr.setEncoding('utf8');
-            unityProcess.stdout.on('data', (data) => {
-                core.info(data);
-            });
-            unityProcess.stderr.on('data', (data) => {
-                core.error(data);
-            });
-            await new Promise((resolve, reject) => {
-                unityProcess.on('close', (code) => {
-                    exitCode = code;
-                    resolve();
-                });
-            });
-            break;
-        default:
-            throw Error(`Unsupported platform: ${process.platform}`);
-    }
+    var pwsh = await io.which("pwsh", true);
+    var unity = path.resolve(__dirname, 'unity.ps1');
+    core.info(`[command]${editorPath} ${args.join(' ')}`);
+    var exitCode = await exec.exec(`"${pwsh}"`, [`-Command`, unity, editorPath, ...args], {
+        listeners: {
+            stdline: (data) => {
+                const line = data.toString().trim();
+                if (line && line.length > 0) {
+                    core.info(line);
+                }
+            },
+        },
+        silent: true
+    });
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
