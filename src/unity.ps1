@@ -13,12 +13,12 @@ try {
     }
     $logPath = $arguments | Where-Object { $_ -like "-logFile" } | Select-Object -First 1 -Skip 1
     if (-not $logPath) {
-        $logsDirectory = "$env:GITHUB_WORKSPACE/Logs"
-        if (-not (Test-Path logsDirectory)) {
+        $logDirectory = "$env:GITHUB_WORKSPACE/Logs"
+        if (-not (Test-Path logDirectory)) {
             $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
         }
         $date = Get-Date -Format 'yyyyMMddTHHmmss'
-        $logPath = "$logsDirectory/Unity-$date.log"
+        $logPath = "$logDirectory/Unity-$date.log"
         $arguments = $arguments | Where-Object { $_ -ne "-logFile" }
         $arguments += "-logFile"
         $arguments += $logPath
@@ -70,7 +70,7 @@ try {
             }
         }
         Start-Sleep -Milliseconds 1
-    } while ( $fileLocked )
+    } while ($fileLocked)
     Start-Sleep -Milliseconds 1
     Receive-Job $ljob
     Stop-Job $ljob
