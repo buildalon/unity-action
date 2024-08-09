@@ -26163,9 +26163,6 @@ async function ValidateInputs() {
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
-    if (process.platform === `linux`) {
-        editorPath = path.resolve(editorPath, `..`, `..`, `Unity.app`, `Contents`, `Linux`, `Unity`);
-    }
     await fs.access(editorPath, fs.constants.X_OK);
     core.info(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
@@ -28184,7 +28181,16 @@ const main = async () => {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
             const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
-            const exitCode = await exec.exec(editorPath, args);
+            const exitCode = await exec.exec(editorPath, args, {
+                listeners: {
+                    stdout: (data) => {
+                        core.info(data.toString());
+                    },
+                    stderr: (data) => {
+                        core.info(data.toString());
+                    }
+                }
+            });
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);
             }
