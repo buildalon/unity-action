@@ -4,11 +4,11 @@ const io = require('@actions/io');
 const fs = require('fs').promises;
 const path = require('path');
 
-async function ExecUnity(editorPath, args) {
+async function ExecUnityPwsh(editorPath, args) {
     let exitCode = 0;
     var pwsh = await io.which("pwsh", true);
     var unity = path.resolve(__dirname, 'unity.ps1');
-    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} '${editorPath}' '${args.join(` `)}'`, {
+    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -editorPath '${editorPath}' -arguments '${args.join(` `)}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -41,4 +41,4 @@ async function ExecUnity(editorPath, args) {
     }
 }
 
-module.exports = { ExecUnity };
+module.exports = { ExecUnityPwsh };

@@ -26246,11 +26246,11 @@ const io = __nccwpck_require__(7436);
 const fs = (__nccwpck_require__(7147).promises);
 const path = __nccwpck_require__(1017);
 
-async function ExecUnity(editorPath, args) {
+async function ExecUnityPwsh(editorPath, args) {
     let exitCode = 0;
     var pwsh = await io.which("pwsh", true);
     var unity = __nccwpck_require__.ab + "unity.ps1";
-    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} '${editorPath}' '${args.join(` `)}'`, {
+    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -editorPath '${editorPath}' -arguments '${args.join(` `)}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -26283,7 +26283,7 @@ async function ExecUnity(editorPath, args) {
     }
 }
 
-module.exports = { ExecUnity };
+module.exports = { ExecUnityPwsh };
 
 
 /***/ }),
@@ -28195,13 +28195,13 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { ValidateInputs } = __nccwpck_require__(7229);
-const { ExecUnity } = __nccwpck_require__(8986);
+const { ExecUnityPwsh } = __nccwpck_require__(8986);
 const core = __nccwpck_require__(2186);
 
 const main = async () => {
     try {
         const [editor, args] = await ValidateInputs();
-        await ExecUnity(editor, args);
+        await ExecUnityPwsh(editor, args);
     } catch (error) {
         core.setFailed(error.message);
     }
