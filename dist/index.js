@@ -26267,46 +26267,25 @@ module.exports = { Cleanup };
 
 const core = __nccwpck_require__(2186);
 const exec = __nccwpck_require__(1514);
+const { spawn } = __nccwpck_require__(2081);
+const process = __nccwpck_require__(7282);
 
 async function ExecUnity(editor, args) {
-    switch (process.platform) {
-        case 'linux':
-        case 'darwin':
-            core.info(`[command]${editor} ${args.join(' ')}`);
-            return await exec.exec(editor, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
-            });
-        default:
-            core.info(`[command]"${editor}" ${args.join(' ')}`);
-            return await exec.exec(`"${editor}"`, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true,
-                windowsVerbatimArguments: true
-            });
-    }
+    const process = spawn(`"${editor}"`, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsVerbatimArguments: process.platform === `win32`
+    });
+    process.stdout.on('data', (data) => {
+        core.info(data.toString());
+    });
+    process.stderr.on('data', (data) => {
+        core.error(data.toString());
+    });
+    return new Promise((resolve, reject) => {
+        process.on('close', (code) => {
+            resolve(code);
+        });
+    });
 }
 
 module.exports = { ExecUnity };
@@ -26471,6 +26450,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
+
+/***/ }),
+
+/***/ 7282:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
 
 /***/ }),
 

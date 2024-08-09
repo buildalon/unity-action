@@ -1,45 +1,24 @@
 const core = require('@actions/core');
 const exec = require('@actions/exec');
+const { spawn } = require('child_process');
+const process = require('process');
 
 async function ExecUnity(editor, args) {
-    switch (process.platform) {
-        case 'linux':
-        case 'darwin':
-            core.info(`[command]${editor} ${args.join(' ')}`);
-            return await exec.exec(editor, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
-            });
-        default:
-            core.info(`[command]"${editor}" ${args.join(' ')}`);
-            return await exec.exec(`"${editor}"`, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true,
-                windowsVerbatimArguments: true
-            });
-    }
+    const process = spawn(`"${editor}"`, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsVerbatimArguments: process.platform === `win32`
+    });
+    process.stdout.on('data', (data) => {
+        core.info(data.toString());
+    });
+    process.stderr.on('data', (data) => {
+        core.error(data.toString());
+    });
+    return new Promise((resolve, reject) => {
+        process.on('close', (code) => {
+            resolve(code);
+        });
+    });
 }
 
 module.exports = { ExecUnity };
