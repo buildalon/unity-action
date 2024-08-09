@@ -10,11 +10,11 @@ try {
     }
     Write-Host "::debug::Unity editor path: $editorPath"
     if (-not $argumentsString) {
-        throw "-arguments is a required argument"
+        throw "argumentsString is a required argument"
     }
     Write-Host "::debug::Unity editor arguments: $argumentsString"
     $arguments = $argumentsString -split ','
-    $logPath = $arguments | Where-Object { $_ -match "-logFile" } | Select-Object -First 1 -Skip 1
+    $logPath = ($index = [Array]::IndexOf($arguments, "-logFile"); if ($index -ge 0 -and $index + 1 -lt $arguments.Length) { $arguments[$index + 1] } else { $null })
     if (-not $logPath) {
         write-host "logPath not found, creating one..."
         $logDirectory = "$env:GITHUB_WORKSPACE/Logs"
@@ -40,7 +40,7 @@ try {
     $processId = $process.Id
     Write-Host "::debug::Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
-    while ( -not $process.HasExited ) {
+    while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
         Receive-Job $ljob
         if ( $null -eq (Get-Process -Id $processId -ErrorAction SilentlyContinue) ) {
@@ -67,8 +67,8 @@ try {
             $fileLocked = $true
             Start-Sleep -Milliseconds 1
         }
-        if ( $stopwatch.elapsed -lt $timeout ) {
-            if ( (-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT") ) {
+        if ($stopwatch.elapsed -lt $timeout) {
+            if ((-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT")) {
                 $procsWithParent = Get-CimInstance -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
                 $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
                 $procs = Get-Process -IncludeUserName | Where-Object -Property Id -In $orphaned.ProcessId | Where-Object { $_.UserName -match $env:username }

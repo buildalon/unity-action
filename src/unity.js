@@ -9,7 +9,7 @@ async function ExecUnity(editorPath, args) {
     var pwsh = await io.which("pwsh", true);
     var unity = path.resolve(__dirname, 'unity.ps1');
     core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-    exitCode = await exec.exec(`"${pwsh}" -Command`, `& {${unity} -editorPath '${editorPath}' -arguments '${args.join(`,`)}'}`, {
+    exitCode = await exec.exec(`"${pwsh}" -Command`, `& {${unity} -editorPath '${editorPath}' -argumentsString '${args.join(`,`)}'}`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -37,7 +37,6 @@ async function ExecUnity(editorPath, args) {
     } catch (error) {
         // nothing
     }
-
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
