@@ -26249,8 +26249,7 @@ async function ExecUnity(editorPath, args) {
     let exitCode = 0;
     var pwsh = await io.which("pwsh", true);
     var unity = __nccwpck_require__.ab + "unity.ps1";
-    //core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-    exitCode = await exec.exec(`"${pwsh}" -Command`, `& {${unity} '${editorPath}' '${args.join(`,`)}'}`, {
+    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} '${editorPath}' '${args.join(` `)}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();

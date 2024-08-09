@@ -1,7 +1,7 @@
 # execute unity editor with the given path and arguments as a csv string
 param(
     [string]$editorPath,
-    [string]$argumentsString
+    [string]$arguments
 )
 $process = $null
 try {
@@ -9,32 +9,12 @@ try {
         throw "-editorPath is a required argument"
     }
     Write-Host "::debug::Unity editor path: $editorPath"
-    if (-not $argumentsString) {
+    if (-not $arguments) {
         throw "-arguments is a required argument"
     }
-    Write-Host "::debug::Unity editor arguments: $argumentsString"
-    $arguments = $argumentsString -split ','
-    for ($i = 0; $i -lt $arguments.Length; $i++) {
-        if ($arguments[$i] -eq "-logFile" -and $i + 1 -lt $arguments.Length) {
-            $logPath = $arguments[$i + 1]
-            Write-Host "logPath found: $logPath"
-            break
-        }
-    }
-    if (-not $logPath) {
-        Write-Host "logPath not found, creating one..."
-        $logDirectory = "$env:GITHUB_WORKSPACE/Logs"
-        if (-not (Test-Path logDirectory)) {
-            $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
-        }
-        $date = Get-Date -Format 'yyyyMMTddTHHmmss'
-        $logPath = "$logDirectory/Unity-$date.log"
-        $arguments += "-logFile"
-        $arguments += "`"$logPath`""
-    }
-    $args = $arguments -join ' '
-    Write-Host "[command]"$editorPath" $args"
-    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$args" -PassThru
+    Write-Host "::debug::Unity editor arguments: $arguments"
+    Write-Host "[command]"$editorPath" $arguments"
+    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$arguments" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
         while (-not (Test-Path $log -Type Leaf)) {

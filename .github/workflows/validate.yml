@@ -53,15 +53,12 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      # - uses: ./ # buildalon/unity-action
-      #   with:
-      #     args: '-version'
-      - uses: ./ # buildalon/unity-action
+      - uses: xrtk/unity-action@v6
         name: Project Validation
         with:
           log-name: 'project-validation'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
-      - uses: ./ # buildalon/unity-action
+      - uses: xrtk/unity-action@v6
         name: '${{ matrix.build-target }}-Build'
         with:
           log-name: '${{ matrix.build-target }}-Build'
