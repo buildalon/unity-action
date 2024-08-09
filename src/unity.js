@@ -6,10 +6,9 @@ const fs = require('fs').promises;
 const path = require('path');
 
 async function ExecUnityPwsh(editorPath, args) {
-    let exitCode = 0;
-    var pwsh = await io.which("pwsh", true);
-    var unity = path.resolve(__dirname, 'unity.ps1');
-    exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -editorPath '${editorPath}' -arguments '${args.join(` `)}'`, {
+    const pwsh = await io.which("pwsh", true);
+    const unity = path.resolve(__dirname, 'unity.ps1');
+    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -editorPath '${editorPath}' -arguments '${args.join(` `)}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -68,6 +67,9 @@ async function ExecUnitySpawn(editorPath, args) {
             resolve(code);
         });
     });
+    if (exitCode !== 0) {
+        throw Error(`Unity failed with exit code ${exitCode}`);
+    }
 }
 
 module.exports = { ExecUnityPwsh };
