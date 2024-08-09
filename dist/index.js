@@ -25534,7 +25534,9 @@ const core = __nccwpck_require__(2186);
 const { spawn } = __nccwpck_require__(2081);
 
 async function ExecUnity(editor, args) {
+    core.info(`[command]"${editor}" ${args.join(` `)}`);
     const unityProcess = spawn(`"${editor}"`, args, {
+        shell: true,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsVerbatimArguments: process.platform === `win32`
     });

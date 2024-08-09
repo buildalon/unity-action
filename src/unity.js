@@ -2,7 +2,9 @@ const core = require('@actions/core');
 const { spawn } = require('child_process');
 
 async function ExecUnity(editor, args) {
+    core.info(`[command]"${editor}" ${args.join(` `)}`);
     const unityProcess = spawn(`"${editor}"`, args, {
+        shell: true,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsVerbatimArguments: process.platform === `win32`
     });
