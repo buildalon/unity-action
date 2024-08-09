@@ -58,16 +58,19 @@ jobs:
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
       - uses: ./ # buildalon/unity-action
+        with:
+          args: '-version'
+      - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
           log-name: 'project-validation'
-          args: '-quit -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
       - uses: ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
-          args: '-quit -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()

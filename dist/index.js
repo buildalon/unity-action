@@ -25435,6 +25435,15 @@ async function ValidateInputs() {
     const inputArgs = inputArgsString !== undefined
         ? inputArgsString.split(` `)
         : [];
+    if (inputArgs.includes(`-version`)) {
+        return [editorPath, [`-version`]];
+    }
+    if (!inputArgs.includes(`-batchmode`)) {
+        args.push(`-batchmode`);
+    }
+    if (!inputArgs.includes(`-nographics`)) {
+        args.push(`-nographics`);
+    }
     if (!inputArgs.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
         if (buildTarget) {
