@@ -1,7 +1,7 @@
-# execute unity editor with the given path and array of arguments
+# execute unity editor with the given path and arguments as a csv string
 param(
     [string]$editorPath,
-    [string[]]$arguments
+    [string]$argumentsString
 )
 $process = $null
 try {
@@ -10,12 +10,14 @@ try {
         throw "-editorPath is a required argument"
     }
     Write-Host "editorPath: $editorPath"
-    if (-not $arguments) {
+    if (-not $argumentsString) {
         throw "-arguments is a required argument"
     }
+    $arguments = $argumentsString -split ','
     Write-Host "arguments: $arguments"
     $logPath = $arguments | Where-Object { $_ -like "-logFile" } | Select-Object -First 1 -Skip 1
     if (-not $logPath) {
+        write-host "logPath not found, creating one..."
         $logDirectory = "$env:GITHUB_WORKSPACE/Logs"
         if (-not (Test-Path logDirectory)) {
             $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
@@ -24,7 +26,7 @@ try {
         $logPath = "$logDirectory/Unity-$date.log"
         $arguments = $arguments | Where-Object { $_ -ne "-logFile" }
         $arguments += "-logFile"
-        $arguments += $logPath
+        $arguments += "`"$logPath`""
     }
     $argumentsString = $arguments -join ' '
     Write-Host "`"$editorPath`" $argumentsString"
@@ -37,7 +39,7 @@ try {
         Get-Content $log -Wait | Write-Host
     } -ArgumentList $logPath
     $processId = $process.Id
-    Write-Output "::debug::Unity process started with pid: $processId"
+    Write-Output "Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
     while ( -not $process.HasExited ) {
         Start-Sleep -Milliseconds 1
