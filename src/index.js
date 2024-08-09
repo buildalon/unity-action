@@ -1,4 +1,5 @@
 const { ValidateInputs } = require('./inputs');
+const { ExecUnity } = require('./unity');
 const { Cleanup } = require('./post');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
@@ -10,22 +11,7 @@ const main = async () => {
         if (!IS_POST) {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
-            const exitCode = await exec.exec(`"${editor}"`, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true,
-                windowsVerbatimArguments: process.platform === 'win32'
-            });
+            const exitCode = await ExecUnity(editor, args);
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);
             }

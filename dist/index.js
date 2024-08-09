@@ -26262,6 +26262,52 @@ module.exports = { Cleanup };
 
 /***/ }),
 
+/***/ 8986:
+/***/ (() => {
+
+
+async function ExecUnity(editor, args) {
+    core.info(`[command]"${editor}" ${args.join(' ')}`);
+    switch (process.platform) {
+        case 'linux':
+        case 'darwin':
+            return await exec.exec(editor, args, {
+                listeners: {
+                    stdline: (data) => {
+                        core.info(data);
+                    },
+                    stdout: (data) => {
+                        core.info(data);
+                    },
+                    stderr: (data) => {
+                        core.info(data);
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+        default:
+            return await exec.exec(`"${editor}"`, args, {
+                listeners: {
+                    stdline: (data) => {
+                        core.info(data);
+                    },
+                    stdout: (data) => {
+                        core.info(data);
+                    },
+                    stderr: (data) => {
+                        core.info(data);
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true,
+                windowsVerbatimArguments: true
+            });
+    }
+}
+
+/***/ }),
+
 /***/ 4978:
 /***/ ((module) => {
 
@@ -28169,6 +28215,7 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { ValidateInputs } = __nccwpck_require__(7229);
+const { ExecUnity } = __nccwpck_require__(8986);
 const { Cleanup } = __nccwpck_require__(8303);
 const core = __nccwpck_require__(2186);
 const exec = __nccwpck_require__(1514);
@@ -28180,22 +28227,7 @@ const main = async () => {
         if (!IS_POST) {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
-            const exitCode = await exec.exec(`"${editor}"`, args, {
-                listeners: {
-                    stdline: (data) => {
-                        core.info(data);
-                    },
-                    stdout: (data) => {
-                        core.info(data);
-                    },
-                    stderr: (data) => {
-                        core.info(data);
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true,
-                windowsVerbatimArguments: process.platform === 'win32'
-            });
+            const exitCode = await ExecUnity(editor, args);
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);
             }
