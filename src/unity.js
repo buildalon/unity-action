@@ -6,7 +6,7 @@ async function ExecUnity(editorPath, args) {
     switch (process.platform) {
         case 'linux':
             core.info(`[command]xvfb-run --auto-servernum "${editorPath}" ${args.join(' ')}`);
-            exitCode = await exec.exec('xvfb-run', ['--auto-servernum', `"${editorPath}"`, ...args], {
+            exitCode = await exec.exec('xvfb-run', ['--auto-servernum', editorPath, ...args], {
                 listeners: {
                     stdout: (data) => {
                         core.info(data.toString());
