@@ -13,10 +13,15 @@ try {
     }
     $logPath = $arguments | Where-Object { $_ -like "-logFile" } | Select-Object -First 1 -Skip 1
     if (-not $logPath) {
-        if (-not (Test-Path "$env:GITHUB_WORKSPACE/Logs")) {
-            New-Item -Path "$env:GITHUB_WORKSPACE/Logs" -ItemType Directory
+        $logsDirectory = "$env:GITHUB_WORKSPACE/Logs"
+        if (-not (Test-Path logsDirectory)) {
+            $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
         }
-        $logPath = "$env:GITHUB_WORKSPACE/Logs/Unity-$(Get-Date -Format 'yyyyMMddTHHmmss').log"
+        $date = Get-Date -Format 'yyyyMMddTHHmmss'
+        $logPath = "$logsDirectory/Unity-$date.log"
+        $arguments = $arguments | Where-Object { $_ -ne "-logFile" }
+        $arguments += "-logFile"
+        $arguments += $logPath
     }
     $process = Start-Process -FilePath $editorPath -ArgumentList $arguments -PassThru
     $lJob = Start-Job -ScriptBlock {
