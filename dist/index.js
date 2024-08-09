@@ -26257,7 +26257,8 @@ async function ExecUnity(editorPath, args) {
                 }
             },
         },
-        silent: true
+        silent: true,
+        ignoreReturnCode: true
     });
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);

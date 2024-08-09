@@ -13,7 +13,10 @@ try {
     }
     $logPath = $arguments | Where-Object { $_ -like "-logFile" } | Select-Object -First 1 -Skip 1
     if (-not $logPath) {
-        throw "-logFile path is a required argument"
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE/Logs")) {
+            New-Item -Path "$env:GITHUB_WORKSPACE/Logs" -ItemType Directory
+        }
+        $logPath = "$env:GITHUB_WORKSPACE/Logs/Unity-$(Get-Date -Format 'yyyyMMddTHHmmss').log"
     }
     $process = Start-Process -FilePath $editorPath -ArgumentList $arguments -PassThru
     $lJob = Start-Job -ScriptBlock {
