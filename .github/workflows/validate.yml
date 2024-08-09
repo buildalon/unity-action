@@ -53,9 +53,9 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: ./ # buildalon/unity-action
-        with:
-          args: '-version'
+      # - uses: ./ # buildalon/unity-action
+      #   with:
+      #     args: '-version'
       - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
