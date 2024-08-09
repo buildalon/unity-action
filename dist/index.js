@@ -28186,7 +28186,7 @@ const main = async () => {
                 const editorPathDetails = await fs.stat(editorPath);
                 core.info(`Unity Editor Path Details:\n  > ${JSON.stringify(editorPathDetails)}`);
             }
-            const exitCode = await exec(editorPath, args);
+            const exitCode = await exec.exec(editorPath, args);
             if (exitCode !== 0) {
                 core.setFailed(`Unity process exited with code ${exitCode}`);
             }
