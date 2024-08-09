@@ -8,11 +8,11 @@ try {
     if (-not $editorPath) {
         throw "-editorPath is a required argument"
     }
-    Write-Host "::debug::Unity editor path: $editorPath"
+    Write-Host "Unity editor path: $editorPath"
     if (-not $arguments) {
         throw "-arguments is a required argument"
     }
-    Write-Host "::debug::Unity editor arguments: $arguments"
+    Write-Host "Unity editor arguments: $arguments"
     Write-Host "[command]"$editorPath" $arguments"
     $process = Start-Process -FilePath "$editorPath" -ArgumentList $arguments -PassThru
     $lJob = Start-Job -ScriptBlock {
