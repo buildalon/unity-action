@@ -8,20 +8,21 @@ try {
     if (-not $editorPath) {
         throw "-editorPath is a required argument"
     }
-    Write-Host "Unity editor path: $editorPath"
+    Write-Host "::debug::Unity editor path: $editorPath"
     if (-not $argumentsString) {
         throw "-arguments is a required argument"
     }
-    Write-Host "Unity editor arguments: $argumentsString"
+    Write-Host "::debug::Unity editor arguments: $argumentsString"
     $arguments = $argumentsString -split ','
     for ($i = 0; $i -lt $arguments.Length; $i++) {
         if ($arguments[$i] -eq "-logFile" -and $i + 1 -lt $arguments.Length) {
             $logPath = $arguments[$i + 1]
+            Write-Host "logPath found: $logPath"
             break
         }
     }
     if (-not $logPath) {
-        write-host "logPath not found, creating one..."
+        Write-Host "logPath not found, creating one..."
         $logDirectory = "$env:GITHUB_WORKSPACE/Logs"
         if (-not (Test-Path logDirectory)) {
             $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
@@ -31,9 +32,9 @@ try {
         $arguments += "-logFile"
         $arguments += "`"$logPath`""
     }
-    $argumentsString = $arguments -join ' '
-    Write-Host "[command]"$editorPath" $argumentsString"
-    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$argumentsString" -PassThru
+    $args = $arguments -join ' '
+    Write-Host "[command]"$editorPath" $args"
+    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$args" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
         while (-not (Test-Path $log -Type Leaf)) {
