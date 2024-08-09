@@ -27451,18 +27451,20 @@ const main = async () => {
             const [editor, args] = await ValidateInputs();
             const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
             core.info(`[command]${editorPath} ${args.join(' ')}`);
-            const unityProcess = spawn(editorPath, args, {
-                shell: process.platform !== 'win32',
+            const unityProcess = spawn(`${editorPath} ${args.join(' ')}`, {
+                shell: false,
                 env: { ...process.env },
                 stdio: ['ignore', 'pipe', 'pipe']
             });
+            unityProcess.stdout.setEncoding('utf-8');
+            unityProcess.stderr.setEncoding('utf-8');
             core.saveState('unityPid', unityProcess.pid);
             await fs.writeFile(path.join(WORKSPACE, 'unity-process-id.txt'), unityProcess.pid.toString());
             unityProcess.stdout.on('data', (data) => {
-                core.info(data.toString());
+                core.info(data);
             });
             unityProcess.stderr.on('data', (data) => {
-                core.error(data.toString());
+                core.error(data);
             });
             await new Promise((resolve, reject) => {
                 unityProcess.on('exit', (code) => {
