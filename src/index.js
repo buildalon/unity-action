@@ -18,7 +18,7 @@ const main = async () => {
             const unityProcess = spawn(editorPath, args, {
                 shell: true,
                 env: { ...process.env },
-                stdio: ['ignore', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe']
             });
             unityProcess.stdout.setEncoding('utf-8');
             unityProcess.stderr.setEncoding('utf-8');
@@ -40,6 +40,9 @@ const main = async () => {
                     } else {
                         reject(`Unity exited with code ${code}`);
                     }
+                });
+                unityProcess.on('error', (error) => {
+                    reject(error);
                 });
             });
         } else {
