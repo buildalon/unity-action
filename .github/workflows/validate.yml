@@ -53,17 +53,17 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: xrtk/unity-action@v6
+      - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
           log-name: 'project-validation'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
-      - uses: xrtk/unity-action@v6
+      - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
-          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -buildOutputDirectory ${{ env.UNITY_PROJECT_PATH }}/Builds/${{ matrix.build-target }}'
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()

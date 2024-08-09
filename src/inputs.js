@@ -40,6 +40,7 @@ async function ValidateInputs() {
         inputArgs.includes(`-manualLicenseFile`) ||
         inputArgs.includes(`-returnLicense`) ||
         inputArgs.includes(`-serial`) ||
+        inputArgs.includes(`-version`) ||
         inputArgs.includes(`-createProject `));
     if (!inputArgs.includes(`-projectPath`) && needsProjectPath) {
         projectPath = core.getInput(`project-path`) || UNITY_PROJECT_PATH;
@@ -66,7 +67,7 @@ async function ValidateInputs() {
             core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
             await fs.mkdir(logsDirectory, { recursive: true });
         }
-        const logName = core.getInput(`log-name`, { required: true });
+        const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
