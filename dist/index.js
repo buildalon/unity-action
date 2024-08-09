@@ -26263,14 +26263,16 @@ module.exports = { Cleanup };
 /***/ }),
 
 /***/ 8986:
-/***/ (() => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const core = __nccwpck_require__(2186);
+const exec = __nccwpck_require__(1514);
 
 async function ExecUnity(editor, args) {
-    core.info(`[command]"${editor}" ${args.join(' ')}`);
     switch (process.platform) {
         case 'linux':
         case 'darwin':
+            core.info(`[command]${editor} ${args.join(' ')}`);
             return await exec.exec(editor, args, {
                 listeners: {
                     stdline: (data) => {
@@ -26287,6 +26289,7 @@ async function ExecUnity(editor, args) {
                 ignoreReturnCode: true
             });
         default:
+            core.info(`[command]"${editor}" ${args.join(' ')}`);
             return await exec.exec(`"${editor}"`, args, {
                 listeners: {
                     stdline: (data) => {
@@ -26305,6 +26308,9 @@ async function ExecUnity(editor, args) {
             });
     }
 }
+
+module.exports = { ExecUnity };
+
 
 /***/ }),
 
@@ -28218,7 +28224,6 @@ const { ValidateInputs } = __nccwpck_require__(7229);
 const { ExecUnity } = __nccwpck_require__(8986);
 const { Cleanup } = __nccwpck_require__(8303);
 const core = __nccwpck_require__(2186);
-const exec = __nccwpck_require__(1514);
 
 const IS_POST = !!core.getState('isPost');
 

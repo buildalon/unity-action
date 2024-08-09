@@ -2,7 +2,6 @@ const { ValidateInputs } = require('./inputs');
 const { ExecUnity } = require('./unity');
 const { Cleanup } = require('./post');
 const core = require('@actions/core');
-const exec = require('@actions/exec');
 
 const IS_POST = !!core.getState('isPost');
 
