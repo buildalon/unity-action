@@ -14,7 +14,7 @@ try {
     }
     Write-Host "::debug::Unity editor arguments: $arguments"
     Write-Host "[command]"$editorPath" $arguments"
-    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$arguments" -PassThru
+    $process = Start-Process -FilePath "$editorPath" -ArgumentList $arguments -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
         while (-not (Test-Path $log -Type Leaf)) {
@@ -25,12 +25,10 @@ try {
     $processId = $process.Id
     Write-Host "Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
-    while ( -not $process.HasExited ) {
+    while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
         Receive-Job $ljob
-        if ( $null -eq (Get-Process -Id $processId -ErrorAction SilentlyContinue) ) {
-            break
-        }
+        if ($null -eq (Get-Process -Id $processId -ErrorAction SilentlyContinue)) { break }
     }
     $fileLocked = $true
     $timeout = New-TimeSpan -Seconds 10
@@ -52,12 +50,16 @@ try {
             $fileLocked = $true
             Start-Sleep -Milliseconds 1
         }
-        if ( $stopwatch.elapsed -lt $timeout ) {
-            if ( (-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT") ) {
+        if ($stopwatch.elapsed -lt $timeout) {
+            if ((-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT")) {
                 $procsWithParent = Get-CimInstance -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
                 $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
-                $procs = Get-Process -IncludeUserName | Where-Object -Property Id -In $orphaned.ProcessId | Where-Object { $_.UserName -match $env:username }
-                $procs | ForEach-Object { Stop-Process -Id $_.Id -ErrorAction SilentlyContinue }
+                $procs = Get-Process -IncludeUserName | Where-Object -Property Id -In $orphaned.ProcessId | Where-Object {
+                    $_.UserName -match $env:username
+                }
+                $procs | ForEach-Object {
+                    Stop-Process -Id $_.Id -ErrorAction SilentlyContinue
+                }
             }
         }
         Start-Sleep -Milliseconds 1

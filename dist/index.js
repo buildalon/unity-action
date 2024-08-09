@@ -26240,6 +26240,7 @@ module.exports = { ValidateInputs };
 /***/ 8986:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const { spawn } = __nccwpck_require__(2081);
 const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
 const io = __nccwpck_require__(7436);
@@ -26267,9 +26268,10 @@ async function ExecUnityPwsh(editorPath, args) {
         await fs.access(pidFile, fs.constants.R_OK);
         try {
             const pid = await fs.readFile(pidFile, 'utf8');
+            core.info(`Killing Unity process with pid: ${pid}`);
             process.kill(pid);
         } catch (error) {
-            if (error.code !== 'ENOENT' || error.code !== 'ESRCH') {
+            if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
                 core.info(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
             }
         } finally {
@@ -26281,6 +26283,32 @@ async function ExecUnityPwsh(editorPath, args) {
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
+}
+
+async function ExecUnitySpawn(editorPath, args) {
+    await new Promise((resolve, reject) => {
+        const unity = spawn(editorPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        unity.stdout.setEncoding('utf8');
+        unity.stdout.on('data', (data) => {
+            const line = data.toString().trim();
+            if (line && line.length > 0) {
+                core.info(line);
+            }
+        });
+        unity.stderr.setEncoding('utf8');
+        unity.stderr.on('data', (data) => {
+            const line = data.toString().trim();
+            if (line && line.length > 0) {
+                core.error(line);
+            }
+        });
+        unity.on('close', (code) => {
+            if (code !== 0) {
+                reject(new Error(`Unity failed with exit code ${code}`));
+            }
+            resolve();
+        });
+    });
 }
 
 module.exports = { ExecUnityPwsh };
