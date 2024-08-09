@@ -7,9 +7,12 @@ const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
 
 async function ValidateInputs() {
-    const editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
+    let editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
+    }
+    if (process.platform === `linux`) {
+        editorPath = path.resolve(editorPath, `..`, `..`, `Unity.app`, `Contents`, `Linux`, `Unity`);
     }
     await fs.access(editorPath, fs.constants.X_OK);
     core.info(`Unity Editor Path:\n  > "${editorPath}"`);
