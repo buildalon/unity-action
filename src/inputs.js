@@ -51,7 +51,14 @@ async function ValidateInputs() {
         }
         await fs.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, projectPath);
+        switch (process.platform) {
+            case `win32`:
+                args.push(`-projectPath`, `"${projectPath}"`);
+                break;
+            default:
+                args.push(`-projectPath`, projectPath);
+                break;
+        }
     }
     if (inputArgs) {
         args.push(...inputArgs);
@@ -70,7 +77,14 @@ async function ValidateInputs() {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `-`, logPath);
+        switch (process.platform) {
+            case `win32`:
+                args.push(`-logFile`, `-`, `"${logPath}"`);
+                break;
+            default:
+                args.push(`-logFile`, `-`, logPath);
+                break;
+        }
     } else {
         const logFileIndex = args.indexOf(`-logFile`);
         if (logFileIndex !== -1 && args[logFileIndex + 1] !== `-`) {

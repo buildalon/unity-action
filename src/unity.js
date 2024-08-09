@@ -8,8 +8,11 @@ async function ExecUnity(editorPath, args) {
             core.info(`[command]xvfb-run --auto-servernum "${editorPath}" ${args.join(' ')}`);
             exitCode = await exec.exec('xvfb-run', ['--auto-servernum', editorPath, ...args], {
                 listeners: {
-                    stdout: (data) => {
-                        core.info(data.toString());
+                    stdline: (data) => {
+                        const line = data.toString();
+                        if (line && line.trim().length > 0) {
+                            core.info(data);
+                        }
                     }
                 },
                 silent: true,
