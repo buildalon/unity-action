@@ -23,7 +23,8 @@ try {
         $arguments += "-logFile"
         $arguments += $logPath
     }
-    $process = Start-Process -FilePath $editorPath -ArgumentList $arguments -PassThru
+    $argumentsString = $arguments -join ' '
+    $process = Start-Process -FilePath "$editorPath" -ArgumentList "$argumentsString" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
         while (-not (Test-Path $log -Type Leaf)) {
