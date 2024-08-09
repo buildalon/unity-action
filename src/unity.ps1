@@ -8,9 +8,6 @@ try {
     if (-not $editorPath) {
         throw "-editorPath is a required argument"
     }
-    if ($editorPath -notmatch "unity") {
-        throw "invalid unity editor path"
-    }
     $logPath = $arguments | Where-Object { $_ -like "-logFile" } | Select-Object -First 1 -Skip 1
     if (-not $logPath) {
         $logDirectory = "$env:GITHUB_WORKSPACE/Logs"

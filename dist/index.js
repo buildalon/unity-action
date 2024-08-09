@@ -26245,21 +26245,56 @@ const io = __nccwpck_require__(7436);
 const path = __nccwpck_require__(1017);
 
 async function ExecUnity(editorPath, args) {
-    var pwsh = await io.which("pwsh", true);
-    var unity = __nccwpck_require__.ab + "unity.ps1";
-    core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-    var exitCode = await exec.exec(`"${pwsh}" -Command`, [__nccwpck_require__.ab + "unity.ps1", editorPath, ...args], {
-        listeners: {
-            stdline: (data) => {
-                const line = data.toString().trim();
-                if (line && line.length > 0) {
-                    core.info(line);
-                }
-            },
-        },
-        silent: true,
-        ignoreReturnCode: true
-    });
+    let exitCode = 0;
+    switch (process.platform) {
+        case 'win32':
+            var pwsh = await io.which("pwsh", true);
+            var unity = __nccwpck_require__.ab + "unity.ps1";
+            core.info(`[command]"${editorPath}" ${args.join(' ')}`);
+            exitCode = await exec.exec(`"${pwsh}" -Command`, [__nccwpck_require__.ab + "unity.ps1", editorPath, ...args], {
+                listeners: {
+                    stdline: (data) => {
+                        const line = data.toString().trim();
+                        if (line && line.length > 0) {
+                            core.info(line);
+                        }
+                    },
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+            break;
+        case 'darwin':
+            core.info(`[command]"${editorPath}" ${args.join(' ')}`);
+            exitCode = await exec.exec(`"${editorPath}"`, args, {
+                listeners: {
+                    stdline: (data) => {
+                        const line = data.toString().trim();
+                        if (line && line.length > 0) {
+                            core.info(line);
+                        }
+                    },
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+            break;
+        case 'linux':
+            core.info(`[command]xvfb-run --auto-servernum "${editorPath}" ${args.join(' ')}`);
+            await exec.exec('xvfb-run', ['--auto-servernum', editorPath, ...args], {
+                listeners: {
+                    stdline: (data) => {
+                        const line = data.toString().trim();
+                        if (line && line.length > 0) {
+                            core.info(line);
+                        }
+                    },
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+            break;
+    }
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
