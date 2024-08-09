@@ -27450,25 +27450,24 @@ const main = async () => {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
             const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
-            if (process.platform === 'linux') {
-                const editorPathDetails = await fs.stat(editorPath);
-                core.info(`Unity Editor Path Details:\n  > ${JSON.stringify(editorPathDetails)}`);
-            }
             core.info(`[command]${editorPath} ${args.join(' ')}`);
             const unityProcess = spawn(editorPath, args, {
-                shell: true,
+                shell: process.platform !== 'win32',
+                env: { ...process.env },
+                stdio: ['ignore', 'pipe', 'pipe']
             });
             core.saveState('unityPid', unityProcess.pid);
             await fs.writeFile(path.join(WORKSPACE, 'unity-process-id.txt'), unityProcess.pid.toString());
+            unityProcess.stdout.on('data', (data) => {
+                core.info(data.toString());
+            });
+            unityProcess.stderr.on('data', (data) => {
+                core.error(data.toString());
+            });
             await new Promise((resolve, reject) => {
-                unityProcess.stdout.on('data', (data) => {
-                    core.info(data.toString());
-                });
-                unityProcess.stderr.on('data', (data) => {
-                    core.error(data.toString());
-                });
                 unityProcess.on('exit', (code) => {
                     if (code === 0) {
+                        core.info(`Unity exited with code ${code}`);
                         resolve();
                     } else {
                         reject(`Unity exited with code ${code}`);
@@ -27481,7 +27480,9 @@ const main = async () => {
             try {
                 process.kill(unityPid);
             } catch (error) {
-                core.setFailed(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+                if (error.code !== 'ESRCH') {
+                    core.setFailed(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+                }
             }
             await Cleanup();
         }
