@@ -12,7 +12,7 @@ async function ValidateInputs() {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
     await fs.access(editorPath, fs.constants.X_OK);
-    core.info(`Unity Editor Path:\n  > "${editorPath}"`);
+    core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
     const inputArgs = inputArgsString !== undefined
@@ -30,7 +30,7 @@ async function ValidateInputs() {
     if (!inputArgs.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
         if (buildTarget) {
-            core.info(`Build Target:\n  > ${buildTarget}`);
+            core.debug(`Build Target:\n  > ${buildTarget}`);
             args.push(`-buildTarget`, buildTarget);
         }
     }
@@ -50,7 +50,7 @@ async function ValidateInputs() {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
         await fs.access(projectPath, fs.constants.R_OK);
-        core.info(`Unity Project Path:\n  > "${projectPath}"`);
+        core.debug(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
     if (inputArgs) {
@@ -63,18 +63,23 @@ async function ValidateInputs() {
         try {
             await fs.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
-            core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
+            core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
             await fs.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`, { required: true });
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
-        core.info(`Log File Path:\n  > "${logPath}"`);
+        core.debug(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, `-`, logPath);
+    } else {
+        const logFileIndex = args.indexOf(`-logFile`);
+        if (logFileIndex !== -1 && args[logFileIndex + 1] !== `-`) {
+            args.splice(logFileIndex + 1, 0, `-`);
+        }
     }
-    core.info(`Args:`);
+    core.debug(`Args:`);
     for (const arg of args) {
-        core.info(`  > ${arg}`);
+        core.debug(`  > ${arg}`);
     }
     return [editorPath, args];
 }
