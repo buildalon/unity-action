@@ -26262,18 +26262,23 @@ async function ExecUnity(editorPath, args) {
         silent: true,
         ignoreReturnCode: true
     });
+    const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
     try {
-        const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
         await fs.access(pidFile, fs.constants.R_OK);
-        const pid = await fs.readFile(pidFile, 'utf8');
-        process.kill(pid);
-    } catch (error) {
-        if (error.code !== 'ENOENT') {
-            core.info(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+        try {
+            const pid = await fs.readFile(pidFile, 'utf8');
+            process.kill(pid);
+        } catch (error) {
+            if (error.code !== 'ENOENT' || error.code !== 'ESRCH') {
+                core.info(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+            }
+        } finally {
+            await fs.unlink(pidFile);
         }
-    } finally {
-        await fs.unlink(pidFile);
+    } catch (error) {
+        // nothing
     }
+
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
