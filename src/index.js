@@ -1,10 +1,11 @@
 const { ValidateInputs } = require('./inputs');
+const { spawn } = require('child_process');
 const { Cleanup } = require('./post');
 const core = require('@actions/core');
-const exec = require('@actions/exec');
 const fs = require('fs').promises;
 
 const IS_POST = !!core.getState('isPost');
+const WORKSPACE = process.env.GITHUB_WORKSPACE;
 
 const main = async () => {
     try {
@@ -17,21 +18,26 @@ const main = async () => {
                 core.info(`Unity Editor Path Details:\n  > ${JSON.stringify(editorPathDetails)}`);
             }
             core.info(`[command]${editorPath} ${args.join(' ')}`);
-            const exitCode = await exec.exec(editorPath, args, {
-                listeners: {
-                    stdout: (data) => {
-                        core.info(data.toString());
-                    },
-                    stderr: (data) => {
-                        core.error(data.toString());
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
+            const unityProcess = spawn(editorPath, args, {
+                shell: true,
             });
-            if (exitCode !== 0) {
-                core.setFailed(`Unity process exited with code ${exitCode}`);
-            }
+            core.saveState('unityPid', unityProcess.pid);
+            await fs.writeFile(path.join(WORKSPACE, 'unity-process-id.txt'), unityProcess.pid.toString());
+            await new Promise((resolve, reject) => {
+                unityProcess.stdout.on('data', (data) => {
+                    core.info(data.toString());
+                });
+                unityProcess.stderr.on('data', (data) => {
+                    core.error(data.toString());
+                });
+                unityProcess.on('exit', (code) => {
+                    if (code === 0) {
+                        resolve();
+                    } else {
+                        reject(`Unity exited with code ${code}`);
+                    }
+                });
+            });
         } else {
             const unityPid = core.getState('unityPid');
             core.info(`Killing Unity process with PID ${unityPid}...`);
