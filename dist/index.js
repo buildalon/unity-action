@@ -26286,29 +26286,21 @@ async function ExecUnityPwsh(editorPath, args) {
 }
 
 async function ExecUnitySpawn(editorPath, args) {
-    await new Promise((resolve, reject) => {
-        const unity = spawn(editorPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
-        unity.stdout.setEncoding('utf8');
-        unity.stdout.on('data', (data) => {
-            const line = data.toString().trim();
-            if (line && line.length > 0) {
-                core.info(line);
-            }
-        });
-        unity.stderr.setEncoding('utf8');
-        unity.stderr.on('data', (data) => {
-            const line = data.toString().trim();
-            if (line && line.length > 0) {
-                core.error(line);
-            }
-        });
-        unity.on('close', (code) => {
-            if (code !== 0) {
-                reject(new Error(`Unity failed with exit code ${code}`));
-            }
-            resolve();
-        });
-    });
+    // use spawn to start the unity process with the args
+    // don't capture the stdout/stderr, instead tail the -logFile and print the output
+    // logFile will be the arg after `-logFile` in the args array
+    // be sure to capture the pid of the unity process and write it to a file
+    // so we can kill the process when the job is done
+    const logFileIndex = args.indexOf('-logFile');
+    if (logFileIndex === -1) {
+        throw Error('Missing -logFile argument');
+    }
+    const logFile = args[logFileIndex + 1];
+    const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
+    const unityProcess = spawn(editorPath, args);
+    await fs.writeFile(pidFile, unityProcess.pid.toString());
+    // tail the logFile and print the output
+    const tail = spawn('tail', ['-f', logFile]);
 }
 
 module.exports = { ExecUnityPwsh };
