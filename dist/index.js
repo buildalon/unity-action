@@ -26241,41 +26241,6 @@ module.exports = { ValidateInputs };
 
 /***/ }),
 
-/***/ 8303:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const core = __nccwpck_require__(2186);
-const io = __nccwpck_require__(7436);
-const fs = (__nccwpck_require__(7147).promises);
-const path = __nccwpck_require__(1017);
-
-const WORKSPACE = process.env.GITHUB_WORKSPACE;
-
-async function Cleanup() {
-    core.info(`Cleaning up workspace...`);
-    const buildsDirectory = path.join(WORKSPACE, 'Builds');
-    const logDirectory = path.join(WORKSPACE, 'Logs');
-    await Promise.all([
-        deletePath(buildsDirectory),
-        deletePath(logDirectory)
-    ]);
-}
-
-async function deletePath(path) {
-    try {
-        await fs.access(path, fs.constants.R_OK);
-        await io.rmRF(path);
-        core.debug(`Deleted:\n  > "${path}"`);
-    } catch (error) {
-        // Ignore error if path does not exist
-    }
-}
-
-module.exports = { Cleanup };
-
-
-/***/ }),
-
 /***/ 4978:
 /***/ ((module) => {
 
@@ -28183,22 +28148,26 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { ValidateInputs } = __nccwpck_require__(7229);
-const { Cleanup } = __nccwpck_require__(8303);
 const core = __nccwpck_require__(2186);
 const exec = __nccwpck_require__(1514);
 
-const IS_POST = !!core.getState('isPost');
-
 const main = async () => {
     try {
-        if (!IS_POST) {
-            core.saveState('isPost', true);
-            const [editor, args] = await ValidateInputs();
-            const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
-            core.info(`[command]${editorPath} ${args.join(' ')}`);
-            await exec.exec(editorPath, args);
-        } else {
-            await Cleanup();
+        const [editor, args] = await ValidateInputs();
+        const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
+        core.info(`[command]${editorPath} ${args.join(' ')}`);
+        const exitCode = await exec.exec(editorPath, args, {
+            listeners: {
+                stdout: (data) => {
+                    core.info(data.toString());
+                }
+            },
+            silent: true,
+            ignoreReturnCode: true,
+            windowsVerbatimArguments: process.platform === 'win32'
+        });
+        if (exitCode !== 0) {
+            throw Error(`Unity failed with exit code ${exitCode}`);
         }
     } catch (error) {
         core.setFailed(error);
