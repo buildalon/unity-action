@@ -26301,6 +26301,15 @@ async function ExecUnitySpawn(editorPath, args) {
     await fs.writeFile(pidFile, unityProcess.pid.toString());
     // tail the logFile and print the output
     const tail = spawn('tail', ['-f', logFile]);
+    tail.stdout.on('data', (data) => {
+        core.info(data.toString());
+    });
+    const exitCode = await new Promise((resolve, reject) => {
+        unityProcess.on('exit', (code) => {
+            tail.kill();
+            resolve(code);
+        });
+    });
 }
 
 module.exports = { ExecUnityPwsh };

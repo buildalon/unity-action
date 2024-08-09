@@ -12,10 +12,7 @@ try {
     if (-not $arguments) {
         throw "-arguments is a required argument"
     }
-    $logPath = $arguments.Split(" ").Where({$_ -match "-logFile"}).Split(" ")[1]
-    if (-not $logPath) {
-        throw "-logFile is a required input in arguments"
-    }
+    $logPath = $arguments.Split(" ") | Where-Object { $_ -eq "-logFile" } | Select-Object -Index 1
     Write-Host "Unity editor arguments: $arguments"
     Write-Host "[command]"$editorPath" $arguments"
     $process = Start-Process -FilePath "$editorPath" -ArgumentList $arguments -PassThru
