@@ -5,6 +5,7 @@ param(
 )
 $process = $null
 try {
+    Write-Host "unity.ps1..."
     if (-not $editorPath) {
         throw "-editorPath is a required argument"
     }
