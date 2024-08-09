@@ -12,11 +12,23 @@ const main = async () => {
             core.saveState('isPost', true);
             const [editor, args] = await ValidateInputs();
             const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
-            if (process.platform === 'darwin') {
+            if (process.platform === 'linux') {
                 const editorPathDetails = await fs.stat(editorPath);
                 core.info(`Unity Editor Path Details:\n  > ${JSON.stringify(editorPathDetails)}`);
             }
-            const exitCode = await exec.exec(editorPath, args);
+            core.info(`[command]${editorPath} ${args.join(' ')}`);
+            const exitCode = await exec.exec(editorPath, args, {
+                listeners: {
+                    stdout: (data) => {
+                        core.info(data.toString());
+                    },
+                    stderr: (data) => {
+                        core.error(data.toString());
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
             if (exitCode !== 0) {
                 core.setFailed(`Unity process exited with code ${exitCode}`);
             }
