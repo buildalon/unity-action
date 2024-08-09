@@ -26220,7 +26220,8 @@ async function ValidateInputs() {
         }
         const logName = core.getInput(`log-name`, { required: true });
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
-        const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
+        const relativePath = logsDirectory.replace(WORKSPACE, ``);
+        const logPath = path.join(`.`, relativePath, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, `-`, logPath);
     } else {
