@@ -25487,7 +25487,7 @@ async function ValidateInputs() {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.info(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, logPath);
+        args.push(`-logFile`, `-`, logPath);
     }
     core.info(`Args:`);
     for (const arg of args) {
