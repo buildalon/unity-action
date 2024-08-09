@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const { Cleanup } = require('./post');
 const core = require('@actions/core');
 const fs = require('fs').promises;
+const path = require('path');
 
 const IS_POST = !!core.getState('isPost');
 const WORKSPACE = process.env.GITHUB_WORKSPACE;

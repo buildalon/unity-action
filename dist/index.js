@@ -27430,6 +27430,7 @@ const { spawn } = __nccwpck_require__(2081);
 const { Cleanup } = __nccwpck_require__(8303);
 const core = __nccwpck_require__(2186);
 const fs = (__nccwpck_require__(7147).promises);
+const path = __nccwpck_require__(1017);
 
 const IS_POST = !!core.getState('isPost');
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
