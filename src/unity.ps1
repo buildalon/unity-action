@@ -24,7 +24,7 @@ try {
         $arguments += $logPath
     }
     $argumentsString = $arguments -join ' '
-    Write-Host '`"$editorPath`" $argumentsString'
+    Write-Host "`"$editorPath`" $argumentsString"
     $process = Start-Process -FilePath "$editorPath" -ArgumentList "$argumentsString" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
