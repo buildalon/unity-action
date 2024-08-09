@@ -26209,7 +26209,25 @@ async function ValidateInputs() {
         args.push(...inputArgs);
     }
     if (!inputArgs.includes(`-logFile`)) {
-        args.push(`-logFile`, `/dev/stdout`);
+        const logsDirectory = projectPath !== undefined
+            ? path.join(projectPath, `Builds`, `Logs`)
+            : path.join(WORKSPACE, `Logs`);
+        try {
+            await fs.access(logsDirectory, fs.constants.R_OK);
+        } catch (error) {
+            core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
+            await fs.mkdir(logsDirectory, { recursive: true });
+        }
+        const logName = core.getInput(`log-name`, { required: true });
+        const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
+        const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
+        core.debug(`Log File Path:\n  > "${logPath}"`);
+        args.push(`-logFile`, `-`, logPath);
+    } else {
+        const logFileIndex = args.indexOf(`-logFile`);
+        if (logFileIndex !== -1 && args[logFileIndex + 1] !== `-`) {
+            args.splice(logFileIndex + 1, 0, `-`);
+        }
     }
     core.debug(`Args:`);
     for (const arg of args) {
@@ -26220,6 +26238,50 @@ async function ValidateInputs() {
 
 module.exports = { ValidateInputs };
 
+
+/***/ }),
+
+/***/ 8986:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const exec = __nccwpck_require__(1514);
+const core = __nccwpck_require__(2186);
+
+async function ExecUnity(editorPath, args) {
+    let exitCode = undefined;
+    switch (process.platform) {
+        case 'linux':
+            core.info(`[command]xvfb-run --auto-servernum "${editorPath}" ${args.join(' ')}`);
+            exitCode = await exec.exec('xvfb-run', ['--auto-servernum', `"${editorPath}"`, ...args], {
+                listeners: {
+                    stdout: (data) => {
+                        core.info(data.toString());
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+            break;
+        default:
+            core.info(`[command]"${editorPath}" ${args.join(' ')}`);
+            exitCode = await exec.exec(`"${editorPath}"`, args, {
+                listeners: {
+                    stdout: (data) => {
+                        core.info(data.toString());
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true,
+                windowsVerbatimArguments: process.platform === 'win32'
+            });
+            break;
+    }
+    if (exitCode !== 0) {
+        throw Error(`Unity failed with exit code ${exitCode}`);
+    }
+}
+
+module.exports = { ExecUnity };
 
 /***/ }),
 
@@ -28130,27 +28192,13 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { ValidateInputs } = __nccwpck_require__(7229);
+const { ExecUnity } = __nccwpck_require__(8986);
 const core = __nccwpck_require__(2186);
-const exec = __nccwpck_require__(1514);
 
 const main = async () => {
     try {
         const [editor, args] = await ValidateInputs();
-        const editorPath = process.platform === 'win32' ? `"${editor}"` : editor;
-        core.info(`[command]${editorPath} ${args.join(' ')}`);
-        const exitCode = await exec.exec(editorPath, args, {
-            listeners: {
-                stdout: (data) => {
-                    core.info(data.toString());
-                }
-            },
-            silent: true,
-            ignoreReturnCode: true,
-            windowsVerbatimArguments: process.platform === 'win32'
-        });
-        if (exitCode !== 0) {
-            throw Error(`Unity failed with exit code ${exitCode}`);
-        }
+        await ExecUnity(editor, args);
     } catch (error) {
         core.setFailed(error);
     }
