@@ -58,7 +58,7 @@ async function ValidateInputs() {
             await fs.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`, { required: true });
-        const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{3}/, ``); // yyyyMMddTHHmmss
+        const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\.\d{4}/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.info(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
