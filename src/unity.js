@@ -2,6 +2,7 @@ const exec = require('@actions/exec');
 const core = require('@actions/core');
 const io = require('@actions/io');
 const path = require('path');
+const fs = require('fs').promises;
 
 async function ExecUnity(editorPath, args) {
     let exitCode = 0;
@@ -20,6 +21,18 @@ async function ExecUnity(editorPath, args) {
         silent: true,
         ignoreReturnCode: true
     });
+    try {
+        const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
+        await fs.access(pidFile, fs.constants.R_OK);
+        const pid = await fs.readFile(pidFile, 'utf8');
+        process.kill(pid);
+    } catch (error) {
+        if (error.code !== 'ENOENT') {
+            core.info(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+        }
+    } finally {
+        await fs.unlink(pidFile);
+    }
     if (exitCode !== 0) {
         throw Error(`Unity failed with exit code ${exitCode}`);
     }
