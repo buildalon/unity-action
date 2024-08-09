@@ -17,13 +17,14 @@ try {
         if (-not (Test-Path logDirectory)) {
             $logDirectory = New-Item -ItemType Directory -Force -Path $logDirectory | Select-Object
         }
-        $date = Get-Date -Format 'yyyyMMddTHHmmss'
+        $date = Get-Date -Format 'yyyyMMTddTHHmmss'
         $logPath = "$logDirectory/Unity-$date.log"
         $arguments = $arguments | Where-Object { $_ -ne "-logFile" }
         $arguments += "-logFile"
         $arguments += $logPath
     }
     $argumentsString = $arguments -join ' '
+    Write-Host '`"$editorPath`" $argumentsString'
     $process = Start-Process -FilePath "$editorPath" -ArgumentList "$argumentsString" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)

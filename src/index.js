@@ -7,7 +7,7 @@ const main = async () => {
         const [editor, args] = await ValidateInputs();
         await ExecUnity(editor, args);
     } catch (error) {
-        core.setFailed(error);
+        core.setFailed(error.message);
     }
 }
 

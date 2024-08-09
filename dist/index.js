@@ -26267,6 +26267,7 @@ async function ExecUnity(editorPath, args) {
 
 module.exports = { ExecUnity };
 
+
 /***/ }),
 
 /***/ 4978:
@@ -28184,7 +28185,7 @@ const main = async () => {
         const [editor, args] = await ValidateInputs();
         await ExecUnity(editor, args);
     } catch (error) {
-        core.setFailed(error);
+        core.setFailed(error.message);
     }
 }
 
