@@ -26297,7 +26297,7 @@ async function TryKillPid(pidFile) {
     }
 }
 
-module.exports = { ExecUnityPwsh, ExecUnitySpawn };
+module.exports = { ExecUnityPwsh };
 
 
 /***/ }),
