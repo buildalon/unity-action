@@ -44,6 +44,7 @@ jobs:
         with:
           version-file: 'None'
           build-targets: ${{ matrix.build-target }}
+          unity-version: ${{ matrix.unity-version }}
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@development
         with:
