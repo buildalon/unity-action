@@ -56,7 +56,7 @@ jobs:
           echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
         shell: pwsh
         # Activates the installation with the provided credentials
-      - uses: buildalon/activate-unity-license@v1
+      - uses: buildalon/activate-unity-license@development
         with:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
@@ -74,6 +74,12 @@ jobs:
           ls -alR "${{ github.workspace }}/TestProject/Assets"
         shell: bash
         name: Set Test Project Path
+        # Activates the installation with the provided credentials
+      - uses: buildalon/activate-unity-license@development
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
       - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
