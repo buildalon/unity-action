@@ -52,11 +52,16 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
+      - run: |
+          TEMPLATE_PATH=$(find ${{ env.UNITY_EDITOR_PATH }}/**/ProjectTemplates -name 'com.unity.template.3d*.tgz' | head -n 1)
+          echo "TEMPLATE_PATH=$TEMPLATE_PATH"
+          echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
+        shell: bash
       - uses: ./ # buildalon/unity-action
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -projectTemplate com.unity.template.3d'
+          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.TEMPLATE_PATH }}'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
       - run: 'ls -alR ${{ github.workspace }}/TestProject/Assets'
