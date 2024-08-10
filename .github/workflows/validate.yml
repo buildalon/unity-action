@@ -15,6 +15,7 @@ jobs:
   build:
     timeout-minutes: 20
     env:
+      TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
       UNITY_PROJECT_PATH: '' # set from unity-setup step
     runs-on: ${{ matrix.os }}
@@ -52,11 +53,15 @@ jobs:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
+      - run: |
+          template=$(find ${{ env.UNITY_EDITOR_PATH }} -type d -name "com.unity.template.3d*")
+          echo "TEMPLATE_PATH=$template"
+          echo "TEMPLATE_PATH=$template" >> $GITHUB_ENV
       - uses: ./ # buildalon/unity-action
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.UNITY_EDITOR_PATH }}/**/ProjectTemplates/com.unity.template.3d**'
+          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.TEMPLATE_PATH }}'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
       - run: 'ls -alR ${{ github.workspace }}/TestProject/Assets'
