@@ -73,7 +73,9 @@ try {
     Receive-Job $ljob
     Stop-Job $ljob
     Remove-Job $ljob
-    exit [int]$process.ExitCode
+    $exitCode = [int]$process.ExitCode
+    Write-Host "Unity Process Exit Code: $exitCode"
+    exit $exitCode
 }
 catch {
     $errorMessage = $_.Exception.Message

@@ -26206,9 +26206,6 @@ async function ValidateInputs() {
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
-    if (inputArgs) {
-        args.push(...inputArgs);
-    }
     if (!inputArgs.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
             ? path.join(projectPath, `Builds`, `Logs`)
@@ -26224,6 +26221,9 @@ async function ValidateInputs() {
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
+    }
+    if (inputArgs) {
+        args.push(...inputArgs);
     }
     core.debug(`Args:`);
     for (const arg of args) {
