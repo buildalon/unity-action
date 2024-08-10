@@ -26253,7 +26253,7 @@ async function ExecUnityPwsh(editorPath, args) {
     const logFilePath = getLogFilePath(args);
     const pwsh = await io.which("pwsh", true);
     const unity = __nccwpck_require__.ab + "unity.ps1";
-    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogFile '${logFilePath}'`, {
+    const exitCode = await exec.exec(`"${pwsh}" -Command`, `& {${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogFile '${logFilePath}'}`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -26286,7 +26286,13 @@ async function ExecUnitySpawn(editorPath, args) {
         core.info(data);
     });
     const exitCode = await new Promise((resolve, reject) => {
+        unityProcess.on('close', (code) => {
+            core.info('on close');
+            tail.kill();
+            resolve(code);
+        });
         unityProcess.on('exit', (code) => {
+            core.info('on exit');
             tail.kill();
             resolve(code);
         });
