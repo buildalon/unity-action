@@ -42,6 +42,7 @@ jobs:
         # sets -> env.UNITY_PROJECT_PATH
       - uses: buildalon/unity-setup@development
         with:
+          version-file: 'None'
           build-targets: ${{ matrix.build-target }}
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
