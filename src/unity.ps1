@@ -6,11 +6,11 @@ param(
 $process = $null
 try {
     if (-not $EditorPath) {
-        throw "-editorPath is a required argument"
+        throw "-EditorPath is a required input"
     }
     Write-Host "Unity editor path: $EditorPath"
     if (-not $Arguments) {
-        throw "-arguments is a required argument"
+        throw "Arguments is a required input"
     }
     $arguments = $Arguments -split ' '
     for ($i = 0; $i -lt $arguments.Length; $i++) {
@@ -20,8 +20,8 @@ try {
             break
         }
     }
-    Write-Host "log path: $logPath"
-    Write-Host "Unity editor Arguments: $Arguments"
+    Write-Host "Log Path: $logPath"
+    Write-Host "Unity Editor Arguments: $Arguments"
     Write-Host "[command]"$EditorPath" $Arguments"
     $process = Start-Process -FilePath "$EditorPath" -ArgumentList "$Arguments" -PassThru
     $lJob = Start-Job -ScriptBlock {
