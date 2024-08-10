@@ -44,11 +44,6 @@ async function ExecUnitySpawn(editorPath, args) {
         core.info(data);
     });
     const exitCode = await new Promise((resolve, reject) => {
-        unityProcess.on('close', (code) => {
-            core.info('on close');
-            tail.kill();
-            resolve(code);
-        });
         unityProcess.on('exit', (code) => {
             core.info('on exit');
             tail.kill();
