@@ -57,7 +57,7 @@ jobs:
         name: Project Validation
         with:
           log-name: 'project-validation'
-          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
       - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:

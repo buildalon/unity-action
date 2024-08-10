@@ -8,10 +8,10 @@ const path = require('path');
 const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
 
 async function ExecUnityPwsh(editorPath, args) {
-    const logFilePath = getLogFilePath(args);
+    const logPath = getLogFilePath(args);
     const pwsh = await io.which('pwsh', true);
     const unity = path.resolve(__dirname, `unity.ps1`);
-    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logFilePath}'`, {
+    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
