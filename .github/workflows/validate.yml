@@ -45,7 +45,7 @@ jobs:
           version-file: 'None'
           build-targets: ${{ matrix.build-target }}
         # Activates the installation with the provided credentials
-      - uses: buildalon/activate-unity-license@v1
+      - uses: buildalon/activate-unity-license@development
         with:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
