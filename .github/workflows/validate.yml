@@ -15,8 +15,10 @@ jobs:
   build:
     timeout-minutes: 20
     env:
+      TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
       UNITY_PROJECT_PATH: '' # set from unity-setup step
+      UNITY_EDITOR_VERSION: '' # set from unity-setup step
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -41,6 +43,7 @@ jobs:
         # Installs the Unity Editor based on your project version text file
         # sets -> env.UNITY_EDITOR_PATH
         # sets -> env.UNITY_PROJECT_PATH
+        # sets -> env.UNITY_EDITOR_VERSION
       - uses: buildalon/unity-setup@development
         with:
           version-file: 'None'
@@ -53,7 +56,8 @@ jobs:
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
       - run: |
-          TEMPLATE_PATH=$(find ${{ env.UNITY_EDITOR_PATH }}/**/ProjectTemplates -name 'com.unity.template.3d*.tgz' | head -n 1)
+          ROOT_PATH=$(echo $UNITY_EDITOR_PATH | sed 's/Editor\/.*//')
+          TEMPLATE_PATH=$(find $ROOT_PATH -name "com.unity.template.3d*.tgz" | head -n 1)
           echo "TEMPLATE_PATH=$TEMPLATE_PATH"
           echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
         shell: bash
