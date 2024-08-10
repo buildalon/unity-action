@@ -1,7 +1,8 @@
 # execute unity editor with the given path and Arguments
 param(
     [string]$EditorPath,
-    [string]$Arguments
+    [string]$Arguments,
+    [string]$LogPath
 )
 $process = $null
 try {
@@ -12,15 +13,10 @@ try {
     if (-not $Arguments) {
         throw "Arguments is a required input"
     }
-    $arguments = $Arguments -split ' '
-    for ($i = 0; $i -lt $arguments.Length; $i++) {
-        if ($arguments[$i] -eq "-logFile" -and $i + 1 -lt $arguments.Length) {
-            $logPath = $arguments[$i + 1]
-            Write-Host "logPath found: $logPath"
-            break
-        }
+    if (-not $LogPath) {
+        throw "LogPath is a required input"
     }
-    Write-Host "Log Path: $logPath"
+    Write-Host "Log Path: $LogPath"
     Write-Host "Unity Editor Arguments: $Arguments"
     Write-Host "[command]"$EditorPath" $Arguments"
     $process = Start-Process -FilePath "$EditorPath" -ArgumentList "$Arguments" -PassThru
@@ -30,7 +26,7 @@ try {
             Start-Sleep -Milliseconds 1
         }
         Get-Content $log -Wait | Write-Host
-    } -ArgumentList $logPath
+    } -ArgumentList $LogPath
     $processId = $process.Id
     Write-Host "Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
@@ -44,8 +40,8 @@ try {
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     do {
         try {
-            if (Test-Path -Path $logPath) {
-                $file = Convert-Path $logPath
+            if (Test-Path -Path $LogPath) {
+                $file = Convert-Path $LogPath
                 $fileStream = [System.IO.File]::Open($file, 'Open', 'Write')
                 $fileStream.Close()
                 $fileStream.Dispose()

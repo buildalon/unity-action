@@ -1,5 +1,5 @@
 const { ValidateInputs } = require('./inputs');
-const { ExecUnityPwsh } = require('./unity');
+const { ExecUnityPwsh, ExecUnitySpawn } = require('./unity');
 const core = require('@actions/core');
 
 const main = async () => {
