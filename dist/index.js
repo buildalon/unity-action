@@ -26240,14 +26240,13 @@ module.exports = { ValidateInputs };
 /***/ 8986:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { spawn } = __nccwpck_require__(2081);
 const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
 const io = __nccwpck_require__(7436);
 const fs = (__nccwpck_require__(7147).promises);
 const path = __nccwpck_require__(1017);
 
-const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
+const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 
 async function ExecUnityPwsh(editorPath, args) {
     const logPath = getLogFilePath(args);
@@ -26264,33 +26263,6 @@ async function ExecUnityPwsh(editorPath, args) {
         },
         silent: true,
         ignoreReturnCode: true
-    });
-    await TryKillPid(pidFile);
-    if (exitCode !== 0) {
-        throw Error(`Unity failed with exit code ${exitCode}`);
-    }
-}
-
-async function ExecUnitySpawn(editorPath, args) {
-    // use spawn to start the unity process with the args
-    // don't capture the stdout/stderr, instead tail the -logFile and print the output
-    // logFile will be the arg after `-logFile` in the args array
-    // be sure to capture the pid of the unity process and write it to a file
-    // so we can kill the process when the job is done
-    const logFilePath = getLogFilePath(args);
-    const unityProcess = spawn(editorPath, args);
-    await fs.writeFile(pidFile, unityProcess.pid.toString());
-    const tail = spawn('tail', ['-f', logFilePath]);
-    tail.stdout.setEncoding('utf8');
-    tail.stdout.on('data', (data) => {
-        core.info(data);
-    });
-    const exitCode = await new Promise((resolve, reject) => {
-        unityProcess.on('exit', (code) => {
-            core.info('on exit');
-            tail.kill();
-            resolve(code);
-        });
     });
     await TryKillPid(pidFile);
     if (exitCode !== 0) {

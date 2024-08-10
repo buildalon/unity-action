@@ -29,7 +29,7 @@ try {
     } -ArgumentList $LogPath
     $processId = $process.Id
     Write-Host "::debug::Unity process started with pid: $processId"
-    $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
+    $processId | Out-File -FilePath "$env:RUNNER_TEMP/unity-process-id.txt"
     while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
         Receive-Job $ljob
