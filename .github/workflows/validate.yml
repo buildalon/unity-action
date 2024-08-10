@@ -63,7 +63,7 @@ jobs:
         with:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
-          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -buildOutputDirectory ${{ env.UNITY_PROJECT_PATH }}/Builds/${{ matrix.build-target }}'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -export -buildOutputDirectory ${{ env.UNITY_PROJECT_PATH }}/Builds/${{ matrix.build-target }}'
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()
