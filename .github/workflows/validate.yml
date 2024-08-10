@@ -15,7 +15,8 @@ jobs:
   build:
     timeout-minutes: 20
     env:
-      UNITY_PROJECT_PATH: ''
+      UNITY_EDITOR_PATH: '' # set from unity-setup step
+      UNITY_PROJECT_PATH: '' # set from unity-setup step
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -55,7 +56,7 @@ jobs:
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject'
+          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.UNITY_EDITOR_PATH }}/**/ProjectTemplates/com.unity.template.3d**'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
       - run: 'ls -alR ${{ github.workspace }}/TestProject/Assets'
