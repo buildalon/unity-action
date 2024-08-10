@@ -41,7 +41,7 @@ async function ValidateInputs() {
         inputArgs.includes(`-returnLicense`) ||
         inputArgs.includes(`-serial`) ||
         inputArgs.includes(`-version`) ||
-        inputArgs.includes(`-createProject `));
+        inputArgs.includes(`-createProject`));
     if (!inputArgs.includes(`-projectPath`) && needsProjectPath) {
         projectPath = core.getInput(`project-path`) || UNITY_PROJECT_PATH;
         if (process.platform === `win32` && projectPath.endsWith(`\\`)) {
