@@ -9,15 +9,15 @@ try {
     if (-not $EditorPath) {
         throw "-EditorPath is a required input"
     }
-    Write-Host "Unity editor path: $EditorPath"
+    Write-Host "::debug::Unity editor path: $EditorPath"
     if (-not $Arguments) {
         throw "Arguments is a required input"
     }
+    Write-Host "::debug::Unity Editor Arguments: $Arguments"
     if (-not $LogPath) {
         throw "LogPath is a required input"
     }
-    Write-Host "Log Path: $LogPath"
-    Write-Host "Unity Editor Arguments: $Arguments"
+    Write-Host "::debug::Log Path: $LogPath"
     Write-Host "[command]"$EditorPath" $Arguments"
     $process = Start-Process -FilePath "$EditorPath" -ArgumentList "$Arguments" -PassThru
     $lJob = Start-Job -ScriptBlock {
@@ -28,7 +28,7 @@ try {
         Get-Content $log -Wait | Write-Host
     } -ArgumentList $LogPath
     $processId = $process.Id
-    Write-Host "Unity process started with pid: $processId"
+    Write-Host "::debug::Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:GITHUB_WORKSPACE/unity-process-id.txt"
     while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
@@ -77,7 +77,7 @@ try {
 }
 catch {
     $errorMessage = $_.Exception.Message
-    Write-Host "::error::$errorMessage"
+    Write-Host "::error::Unity.ps1: $errorMessage"
     if ($process -and (-not $process.HasExited)) {
         $process.Kill()
     }

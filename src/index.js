@@ -5,7 +5,7 @@ const core = require('@actions/core');
 const main = async () => {
     try {
         const [editor, args] = await ValidateInputs();
-        await ExecUnityPwsh(editor, args);
+        await ExecUnitySpawn(editor, args);
     } catch (error) {
         core.setFailed(error.message);
     }
