@@ -49,12 +49,6 @@ jobs:
           version-file: 'None'
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
-        # Activates the installation with the provided credentials
-      - uses: buildalon/activate-unity-license@v1
-        with:
-          license: 'Personal'
-          username: ${{ secrets.UNITY_USERNAME }}
-          password: ${{ secrets.UNITY_PASSWORD }}
       - run: |
           ROOT_PATH=$(echo "$UNITY_EDITOR_PATH" | sed 's/Editor\/.*//')
           echo "ROOT_PATH=$ROOT_PATH"
@@ -62,6 +56,13 @@ jobs:
           echo "TEMPLATE_PATH=$TEMPLATE_PATH"
           echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
         shell: bash
+        name: Find Editor Template Path
+        # Activates the installation with the provided credentials
+      - uses: buildalon/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
       - uses: ./ # buildalon/unity-action
         name: Create Test Project
         with:
@@ -69,10 +70,12 @@ jobs:
           args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.TEMPLATE_PATH }}'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
-      - run: 'ls -alR ${{ github.workspace }}/TestProject/Assets'
+        name: Add Build Pipeline Package
+      - run: |
+          echo "UNITY_PROJECT_PATH=${{ github.workspace }}/TestProject" >> $GITHUB_ENV
+          ls -alR "${{ github.workspace }}/TestProject/Assets"
         shell: bash
-      - run: 'echo "UNITY_PROJECT_PATH=${{ github.workspace }}/TestProject" >> $GITHUB_ENV'
-        shell: bash
+        name: Set Test Project Path
       - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
