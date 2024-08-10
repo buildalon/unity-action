@@ -26250,10 +26250,10 @@ const path = __nccwpck_require__(1017);
 const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
 
 async function ExecUnityPwsh(editorPath, args) {
-    const logFilePath = getLogFilePath(args);
+    const logPath = getLogFilePath(args);
     const pwsh = await io.which('pwsh', true);
     const unity = __nccwpck_require__.ab + "unity.ps1";
-    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logFilePath}'`, {
+    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
@@ -28242,13 +28242,13 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { ValidateInputs } = __nccwpck_require__(7229);
-const { ExecUnityPwsh, ExecUnitySpawn } = __nccwpck_require__(8986);
+const { ExecUnityPwsh } = __nccwpck_require__(8986);
 const core = __nccwpck_require__(2186);
 
 const main = async () => {
     try {
         const [editor, args] = await ValidateInputs();
-        await ExecUnitySpawn(editor, args);
+        await ExecUnityPwsh(editor, args);
     } catch (error) {
         core.setFailed(error.message);
     }
