@@ -57,6 +57,7 @@ jobs:
           password: ${{ secrets.UNITY_PASSWORD }}
       - run: |
           ROOT_PATH=$(echo "$UNITY_EDITOR_PATH" | sed 's/Editor\/.*//')
+          echo "ROOT_PATH=$ROOT_PATH"
           TEMPLATE_PATH=$(find "$ROOT_PATH" -name "com.unity.template.3d*.tgz" | head -n 1)
           echo "TEMPLATE_PATH=$TEMPLATE_PATH"
           echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
