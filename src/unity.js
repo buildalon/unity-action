@@ -5,11 +5,11 @@ const io = require('@actions/io');
 const fs = require('fs').promises;
 const path = require('path');
 
-const pidFile = path.join(process.env.GITHUB_WORKSPACE, `unity-process-id.txt`);
+const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
 
 async function ExecUnityPwsh(editorPath, args) {
     const logFilePath = getLogFilePath(args);
-    const pwsh = await io.which(`pwsh`, true);
+    const pwsh = await io.which('pwsh', true);
     const unity = path.resolve(__dirname, `unity.ps1`);
     const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logFilePath}'`, {
         listeners: {
@@ -61,7 +61,7 @@ async function ExecUnitySpawn(editorPath, args) {
     }
 }
 
-async function getLogFilePath(args) {
+function getLogFilePath(args) {
     const logFileIndex = args.indexOf('-logFile');
     if (logFileIndex === -1) {
         throw Error('Missing -logFile argument');

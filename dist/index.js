@@ -26247,11 +26247,11 @@ const io = __nccwpck_require__(7436);
 const fs = (__nccwpck_require__(7147).promises);
 const path = __nccwpck_require__(1017);
 
-const pidFile = path.join(process.env.GITHUB_WORKSPACE, `unity-process-id.txt`);
+const pidFile = path.join(process.env.GITHUB_WORKSPACE, 'unity-process-id.txt');
 
 async function ExecUnityPwsh(editorPath, args) {
     const logFilePath = getLogFilePath(args);
-    const pwsh = await io.which(`pwsh`, true);
+    const pwsh = await io.which('pwsh', true);
     const unity = __nccwpck_require__.ab + "unity.ps1";
     const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logFilePath}'`, {
         listeners: {
@@ -26303,7 +26303,7 @@ async function ExecUnitySpawn(editorPath, args) {
     }
 }
 
-async function getLogFilePath(args) {
+function getLogFilePath(args) {
     const logFileIndex = args.indexOf('-logFile');
     if (logFileIndex === -1) {
         throw Error('Missing -logFile argument');
