@@ -49,14 +49,14 @@ jobs:
           version-file: 'None'
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
-      - run: |
-          ROOT_PATH=$(echo "$UNITY_EDITOR_PATH" | sed 's/$UNITY_EDITOR_VERSION\/Editor\/.*//')
-          echo "ROOT_PATH=$ROOT_PATH"
-          TEMPLATE_PATH=$(find "$ROOT_PATH" -name "com.unity.template.3d*.tgz" | head -n 1)
-          echo "TEMPLATE_PATH=$TEMPLATE_PATH"
-          echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
-        shell: bash
-        name: Find Editor Template Path
+      - name: Find Unity Template Path
+        run: |
+          $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
+          Write-Host "ROOT_PATH=$rootPath"
+          $templatePath = Get-ChildItem -Recurse -Filter "com.unity.template.3d*.tgz" -Path $rootPath | Select-Object -First 1 | Select-Object -ExpandProperty FullName
+          Write-Host "TEMPLATE_PATH=$templatePath"
+          echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
+        shell: pwsh
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
         with:
