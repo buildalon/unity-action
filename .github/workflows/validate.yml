@@ -58,7 +58,7 @@ jobs:
           args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
-      - run: 'ls -alR ${{ github.workspace }}/TestProject'
+      - run: 'ls -alR ${{ github.workspace }}/TestProject/Assets'
         shell: bash
       - run: 'echo "UNITY_PROJECT_PATH=${{ github.workspace }}/TestProject" >> $GITHUB_ENV'
         shell: bash
