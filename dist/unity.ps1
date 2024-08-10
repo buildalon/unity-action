@@ -1,22 +1,29 @@
-# execute unity editor with the given path and arguments as a csv string
+# execute unity editor with the given path and Arguments
 param(
-    [string]$editorPath,
-    [string]$arguments
+    [string]$EditorPath,
+    [string]$Arguments
 )
 $process = $null
 try {
-    if (-not $editorPath) {
+    if (-not $EditorPath) {
         throw "-editorPath is a required argument"
     }
-    Write-Host "Unity editor path: $editorPath"
-    if (-not $arguments) {
+    Write-Host "Unity editor path: $EditorPath"
+    if (-not $Arguments) {
         throw "-arguments is a required argument"
     }
-    $logPath = $arguments.Split(" ") | Where-Object { $_ -eq "-logFile" } | Select-Object -Index 1
+    $arguments = $Arguments -split ' '
+    for ($i = 0; $i -lt $arguments.Length; $i++) {
+        if ($arguments[$i] -eq "-logFile" -and $i + 1 -lt $arguments.Length) {
+            $logPath = $arguments[$i + 1]
+            Write-Host "logPath found: $logPath"
+            break
+        }
+    }
     Write-Host "log path: $logPath"
-    Write-Host "Unity editor arguments: $arguments"
-    Write-Host "[command]"$editorPath" $arguments"
-    $process = Start-Process -FilePath "$editorPath" -ArgumentList $arguments -PassThru
+    Write-Host "Unity editor Arguments: $Arguments"
+    Write-Host "[command]"$EditorPath" $Arguments"
+    $process = Start-Process -FilePath "$EditorPath" -ArgumentList "$Arguments" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
         while (-not (Test-Path $log -Type Leaf)) {

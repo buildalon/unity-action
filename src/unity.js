@@ -8,7 +8,7 @@ const path = require('path');
 async function ExecUnityPwsh(editorPath, args) {
     const pwsh = await io.which("pwsh", true);
     const unity = path.resolve(__dirname, 'unity.ps1');
-    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -editorPath '${editorPath}' -arguments '${args.join(` `)}'`, {
+    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}'`, {
         listeners: {
             stdline: (data) => {
                 const line = data.toString().trim();
