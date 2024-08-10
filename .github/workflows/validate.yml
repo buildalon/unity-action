@@ -57,6 +57,8 @@ jobs:
           log-name: 'create-test-project'
           args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject'
       - run: 'openupm add com.utilities.buildpipeline'
+          with:
+            working-directory: ${{ github.workspace }}/TestProject
       - run: 'ls -al ${{ github.workspace }}/TestProject'
       - run: 'echo "UNITY_PROJECT_PATH=${{ github.workspace }}/TestProject" >> $GITHUB_ENV'
       - uses: ./ # buildalon/unity-action
