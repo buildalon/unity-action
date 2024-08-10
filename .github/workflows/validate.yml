@@ -67,7 +67,7 @@ jobs:
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject ${{ github.workspace }}/TestProject -cloneFromTemplate ${{ env.TEMPLATE_PATH }}'
+          args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/TestProject" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
       - run: 'openupm add com.utilities.buildpipeline'
         working-directory: ${{ github.workspace }}/TestProject
         name: Add Build Pipeline Package
