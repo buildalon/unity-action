@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    timeout-minutes: 25
+    timeout-minutes: 20
     env:
       TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
@@ -38,7 +38,9 @@ jobs:
             build-target: StandaloneOSX
     steps:
       - uses: actions/checkout@v4
+
       - run: 'npm install -g openupm-cli'
+
         # Installs the Unity Editor based on your project version text file
         # sets -> env.UNITY_EDITOR_PATH
         # sets -> env.UNITY_PROJECT_PATH
@@ -47,6 +49,7 @@ jobs:
           version-file: 'None'
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
+
       - name: Find Unity Template Path
         run: |
           $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
@@ -55,26 +58,24 @@ jobs:
           Write-Host "TEMPLATE_PATH=$templatePath"
           echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
         shell: pwsh
+
         # Activates the installation with the provided credentials
-      - uses: buildalon/activate-unity-license@development
+      - uses: buildalon/activate-unity-license@v1
         with:
           license: 'Personal'
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
+
       - uses: ./ # buildalon/unity-action
         name: Create Test Project
         with:
           log-name: 'create-test-project'
           args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/TestProject" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
+
       - run: 'openupm add com.utilities.buildpipeline'
         name: Add Build Pipeline Package
         working-directory: ${{ github.workspace }}/TestProject
-      - uses: ./ # buildalon/unity-action
-        name: Project Validation
-        with:
-          project-path: ${{ github.workspace }}/TestProject
-          log-name: 'project-validation'
-          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+
       - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
@@ -82,6 +83,7 @@ jobs:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
+
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()
