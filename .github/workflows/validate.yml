@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    timeout-minutes: 25
+    timeout-minutes: 20
     env:
       TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
