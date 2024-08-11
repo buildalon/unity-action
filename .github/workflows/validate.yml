@@ -67,27 +67,18 @@ jobs:
           log-name: 'create-test-project'
           args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/TestProject" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
       - run: 'openupm add com.utilities.buildpipeline'
-        working-directory: ${{ github.workspace }}/TestProject
         name: Add Build Pipeline Package
-      - run: |
-          echo "UNITY_PROJECT_PATH=${{ github.workspace }}/TestProject" >> $GITHUB_ENV
-          ls -alR "${{ github.workspace }}/TestProject/Assets"
-        shell: bash
-        name: Set Test Project Path
-        # Activates the installation with the provided credentials
-      - uses: buildalon/activate-unity-license@development
-        with:
-          license: 'Personal'
-          username: ${{ secrets.UNITY_USERNAME }}
-          password: ${{ secrets.UNITY_PASSWORD }}
+        working-directory: ${{ github.workspace }}/TestProject
       - uses: ./ # buildalon/unity-action
         name: Project Validation
         with:
+          project-path: ${{ github.workspace }}/TestProject
           log-name: 'project-validation'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
       - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
+          project-path: ${{ github.workspace }}/TestProject
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
