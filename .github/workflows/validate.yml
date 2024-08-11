@@ -102,7 +102,8 @@ jobs:
             'Linux' {
               $logs = @(
                 "~/.config/UnityHub/logs/info-log.json",
-                "~/.config/unity3d/Unity/Unity.Licensing.Client.log"
+                "~/.config/unity3d/Unity/Unity.Licensing.Client.log",
+                "~/.config/unity3d/Unity/Unity.Entitlements.Audit.log"
               )
             }
           }
