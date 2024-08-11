@@ -18,6 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.os }}
+      cancel-in-progress: false
     strategy:
       max-parallel: 3
       fail-fast: false
