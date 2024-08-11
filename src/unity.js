@@ -41,11 +41,11 @@ async function TryKillPid(pidFile) {
         await fs.access(pidFile, fs.constants.R_OK);
         try {
             const pid = await fs.readFile(pidFile, 'utf8');
-            core.info(`Attempting to kill Unity process with pid: ${pid}`);
+            core.debug(`Attempting to kill Unity process with pid: ${pid}`);
             process.kill(pid);
         } catch (error) {
             if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
-                core.info(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
+                core.error(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
             }
         } finally {
             await fs.unlink(pidFile);

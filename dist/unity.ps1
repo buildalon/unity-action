@@ -74,7 +74,7 @@ try {
     Stop-Job $ljob
     Remove-Job $ljob
     $exitCode = [int]$process.ExitCode
-    Write-Host "Unity Process Exit Code: $exitCode"
+    Write-Host "::debug::Unity Process Exit Code: $exitCode"
     exit $exitCode
 }
 catch {
