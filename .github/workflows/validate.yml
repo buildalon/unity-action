@@ -88,13 +88,15 @@ jobs:
             'Windows' {
               $logs = @(
                 "$env:APPDATA\UnityHub\logs\info-log.json",
-                "$env:LOCALAPPDATA\Unity\Unity.Licensing.Client.log"
+                "$env:LOCALAPPDATA\Unity\Unity.Licensing.Client.log",
+                "env:LOCALAPPDATA\Unity\Unity.Entitlements.Audit.log"
               )
             }
             'MacOS' {
               $logs = @(
                 "~/Library/Application\ Support/UnityHub/logs/info-log.json",
-                "~/Library/Logs/Unity/Unity.Licensing.Client.log"
+                "~/Library/Logs/Unity/Unity.Licensing.Client.log",
+                "~/Library/Logs/Unity/Unity.Entitlements.Audit.log"
               )
             }
             'Linux' {
