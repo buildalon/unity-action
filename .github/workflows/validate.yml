@@ -83,7 +83,34 @@ jobs:
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
-
+      - run: |
+          switch ($env:RUNNER_OS) {
+            'Windows' {
+              $logs = @(
+                "$env:APPDATA\UnityHub\logs\info-log.json",
+                "$env:LOCALAPPDATA\Unity\Unity.Licensing.Client.log"
+              )
+            }
+            'MacOS' {
+              $logs = @(
+                "~/Library/Application\ Support/UnityHub/logs/info-log.json",
+                "~/Library/Logs/Unity/Unity.Licensing.Client.log"
+              )
+            }
+            'Linux' {
+              $logs = @(
+                "~/.config/UnityHub/logs/info-log.json",
+                "~/.config/unity3d/Unity/Unity.Licensing.Client.log"
+              )
+            }
+          }
+          $logs | ForEach-Object {
+            if (Test-Path $_) {
+              Copy-Item -Path $_ -Destination "$env:GITHUB_WORKSPACE/Logs" -Force
+            }
+          }
+        shell: pwsh
+        if: failure()
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()
