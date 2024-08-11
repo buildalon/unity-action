@@ -46,3 +46,6 @@ jobs:
 ### Outputs
 
 A `unity-process-id.txt` file containing the PID of the Unity process running during the Unity Action execution is created in the workspace directory. This output is useful if you need to kill the Unity process after the action execution fails or is cancelled. You can retrieve the process ID by reading the contents of the `unity-process-id.txt` file.
+
+> [!NOTE]
+> This file is automatically deleted if the step is successful.

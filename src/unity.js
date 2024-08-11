@@ -10,6 +10,14 @@ async function ExecUnityPwsh(editorPath, args) {
     const logPath = getLogFilePath(args);
     const pwsh = await io.which('pwsh', true);
     const unity = path.resolve(__dirname, `unity.ps1`);
+    process.on('SIGINT', async () => {
+        await TryKillPid(pidFile);
+        throw Error('SIGINT event triggered, Unity process was terminated.');
+    });
+    process.on('SIGTERM', async () => {
+        await TryKillPid(pidFile);
+        throw Error('SIGTERM event triggered, Unity process was terminated.');
+    });
     const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`, {
         listeners: {
             stdline: (data) => {
