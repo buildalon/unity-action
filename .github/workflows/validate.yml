@@ -20,6 +20,7 @@ jobs:
       UNITY_PROJECT_PATH: '' # set from unity-setup step
     runs-on: ${{ matrix.os }}
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13]
