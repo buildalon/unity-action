@@ -8,19 +8,19 @@ on:
       - '*'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
       UNITY_PROJECT_PATH: '' # set from unity-setup step
     runs-on: ${{ matrix.os }}
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.os }}
-      cancel-in-progress: false
     strategy:
-      max-parallel: 3
+      max-parallel: 2
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13]
