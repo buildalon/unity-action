@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
+let isCancelled = false;
 
 async function ExecUnityPwsh(editorPath, args) {
     const logPath = getLogFilePath(args);
@@ -12,9 +13,11 @@ async function ExecUnityPwsh(editorPath, args) {
     const unity = path.resolve(__dirname, `unity.ps1`);
     process.on('SIGINT', async () => {
         await TryKillPid(pidFile);
+        isCancelled = true;
     });
     process.on('SIGTERM', async () => {
         await TryKillPid(pidFile);
+        isCancelled = true;
     });
     const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`, {
         listeners: {
@@ -28,9 +31,11 @@ async function ExecUnityPwsh(editorPath, args) {
         silent: true,
         ignoreReturnCode: true
     });
-    await TryKillPid(pidFile);
-    if (exitCode !== 0) {
-        throw Error(`Unity failed with exit code ${exitCode}`);
+    if (!isCancelled) {
+        await TryKillPid(pidFile);
+        if (exitCode !== 0) {
+            throw Error(`Unity failed with exit code ${exitCode}`);
+        }
     }
 }
 
