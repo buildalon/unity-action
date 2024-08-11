@@ -42,3 +42,7 @@ jobs:
 | `build-target` | The build target to use when executing arguments. | false | |
 | `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. | true | `-quit -batchmode -nographics` |
 | `log-name` | The name of the log file to create when running the commands. | false | `Unity-yyyyMMddTHHmmss` |
+
+### Outputs
+
+A `unity-process-id.txt` file containing the PID of the Unity process running during the Unity Action execution is created in the workspace directory. This output is useful if you need to kill the Unity process after the action execution fails or is cancelled. You can retrieve the process ID by reading the contents of the `unity-process-id.txt` file.
