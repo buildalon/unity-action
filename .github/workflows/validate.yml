@@ -1,0 +1,88 @@
+name: validate
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    timeout-minutes: 60
+    env:
+      TEMPLATE_PATH: ''
+      UNITY_EDITOR_PATH: '' # set from unity-setup step
+      UNITY_PROJECT_PATH: '' # set from unity-setup step
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13]
+        unity-version:
+          - 2019.4.40f1 (ffc62b691db5)
+          - 2020.3.48f1 (b805b124c6b7)
+          - 2021.3.41f1 (6c5a9e20c022)
+          - 2022.3.40f1 (cbdda657d2f0)
+          - 6000.0.13f1 (53a692e3fca9)
+        include: # for each os specify the build targets
+          - os: ubuntu-latest
+            build-target: StandaloneLinux64
+          - os: windows-latest
+            build-target: StandaloneWindows64
+          - os: macos-13
+            build-target: StandaloneOSX
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'npm install -g openupm-cli'
+        # Installs the Unity Editor based on your project version text file
+        # sets -> env.UNITY_EDITOR_PATH
+        # sets -> env.UNITY_PROJECT_PATH
+      - uses: buildalon/unity-setup@v1
+        with:
+          version-file: 'None'
+          build-targets: ${{ matrix.build-target }}
+          unity-version: ${{ matrix.unity-version }}
+      - name: Find Unity Template Path
+        run: |
+          $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
+          Write-Host "ROOT_PATH=$rootPath"
+          $templatePath = Get-ChildItem -Recurse -Filter "com.unity.template.3d*.tgz" -Path $rootPath | Select-Object -First 1 | Select-Object -ExpandProperty FullName
+          Write-Host "TEMPLATE_PATH=$templatePath"
+          echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
+        shell: pwsh
+        # Activates the installation with the provided credentials
+      - uses: buildalon/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - uses: ./ # buildalon/unity-action
+        name: Create Test Project
+        with:
+          log-name: 'create-test-project'
+          args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/TestProject" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
+      - run: 'openupm add com.utilities.buildpipeline'
+        name: Add Build Pipeline Package
+        working-directory: ${{ github.workspace }}/TestProject
+      - uses:  ./ # buildalon/unity-action
+        name: '${{ matrix.build-target }}-Build'
+        with:
+          project-path: ${{ github.workspace }}/TestProject
+          log-name: '${{ matrix.build-target }}-Build'
+          build-target: '${{ matrix.build-target }}'
+          args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
+      - uses: actions/upload-artifact@v4
+        name: Upload Artifacts
+        if: always()
+        with:
+          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ runner.os }}-${{ matrix.build-target }}-${{ matrix.unity-version }}-Artifacts'
+          path: |
+            ${{ github.workspace }}/**/*.log
+            ${{ github.workspace }}/**/Builds/${{ matrix.build-target }}/
