@@ -1,4 +1,4 @@
-# execute unity editor with the given path and Arguments
+# execute unity editor with the given EditorPath, Arguments, and LogPath
 param(
     [string]$EditorPath,
     [string]$Arguments,

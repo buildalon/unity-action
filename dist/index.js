@@ -26147,23 +26147,25 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 7229:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 7063:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ValidateInputs = ValidateInputs;
 const core = __nccwpck_require__(2186);
-const fs = (__nccwpck_require__(7147).promises);
 const path = __nccwpck_require__(1017);
-
+const fs = __nccwpck_require__(7147);
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
-
 async function ValidateInputs() {
     let editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
-    await fs.access(editorPath, fs.constants.X_OK);
+    await fs.promises.access(editorPath, fs.constants.X_OK);
     core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
@@ -26187,8 +26189,7 @@ async function ValidateInputs() {
         }
     }
     let projectPath = undefined;
-    const needsProjectPath = !(
-        inputArgs.includes(`-createManualActivationFile`) ||
+    const needsProjectPath = !(inputArgs.includes(`-createManualActivationFile`) ||
         inputArgs.includes(`-manualLicenseFile`) ||
         inputArgs.includes(`-returnLicense`) ||
         inputArgs.includes(`-serial`) ||
@@ -26202,7 +26203,7 @@ async function ValidateInputs() {
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
-        await fs.access(projectPath, fs.constants.R_OK);
+        await fs.promises.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
@@ -26211,10 +26212,11 @@ async function ValidateInputs() {
             ? path.join(projectPath, `Builds`, `Logs`)
             : path.join(WORKSPACE, `Logs`);
         try {
-            await fs.access(logsDirectory, fs.constants.R_OK);
-        } catch (error) {
+            await fs.promises.access(logsDirectory, fs.constants.R_OK);
+        }
+        catch (error) {
             core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
-            await fs.mkdir(logsDirectory, { recursive: true });
+            await fs.promises.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
@@ -26232,27 +26234,25 @@ async function ValidateInputs() {
     return [editorPath, args];
 }
 
-module.exports = { ValidateInputs };
-
 
 /***/ }),
 
-/***/ 8986:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 6938:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ExecUnity = ExecUnity;
 const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
 const io = __nccwpck_require__(7436);
-const fs = (__nccwpck_require__(7147).promises);
 const path = __nccwpck_require__(1017);
-
+const fs = __nccwpck_require__(7147);
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
-
-async function ExecUnityPwsh(editorPath, args) {
+async function ExecUnity(editorPath, args) {
     const logPath = getLogFilePath(args);
-    const pwsh = await io.which('pwsh', true);
-    const unity = __nccwpck_require__.ab + "unity.ps1";
     process.on('SIGINT', async () => {
         await TryKillPid(pidFile);
         isCancelled = true;
@@ -26261,18 +26261,25 @@ async function ExecUnityPwsh(editorPath, args) {
         await TryKillPid(pidFile);
         isCancelled = true;
     });
-    const exitCode = await exec.exec(`"${pwsh}" -Command`, `${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`, {
-        listeners: {
-            stdline: (data) => {
-                const line = data.toString().trim();
-                if (line && line.length > 0) {
-                    core.info(line);
-                }
-            }
-        },
-        silent: true,
-        ignoreReturnCode: true
-    });
+    let exitCode = 0;
+    switch (process.platform) {
+        default:
+            const unity = __nccwpck_require__.ab + "unity.ps1";
+            const pwsh = await io.which('pwsh', true);
+            exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
+                listeners: {
+                    stdline: (data) => {
+                        const line = data.toString().trim();
+                        if (line && line.length > 0) {
+                            core.info(line);
+                        }
+                    }
+                },
+                silent: true,
+                ignoreReturnCode: true
+            });
+            break;
+    }
     if (!isCancelled) {
         await TryKillPid(pidFile);
         if (exitCode !== 0) {
@@ -26280,7 +26287,6 @@ async function ExecUnityPwsh(editorPath, args) {
         }
     }
 }
-
 function getLogFilePath(args) {
     const logFileIndex = args.indexOf('-logFile');
     if (logFileIndex === -1) {
@@ -26288,27 +26294,27 @@ function getLogFilePath(args) {
     }
     return args[logFileIndex + 1];
 }
-
 async function TryKillPid(pidFile) {
     try {
-        await fs.access(pidFile, fs.constants.R_OK);
+        const fileHandle = await fs.promises.open(pidFile, 'r');
         try {
-            const pid = await fs.readFile(pidFile, 'utf8');
+            const pid = await fileHandle.readFile('utf8');
             core.debug(`Attempting to kill Unity process with pid: ${pid}`);
-            process.kill(pid);
-        } catch (error) {
+            process.kill(parseInt(pid));
+        }
+        catch (error) {
             if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
                 core.error(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
             }
-        } finally {
-            await fs.unlink(pidFile);
         }
-    } catch (error) {
-        // nothing
+        finally {
+            await fileHandle.close();
+            await fs.promises.unlink(pidFile);
+        }
+    }
+    catch (error) {
     }
 }
-
-module.exports = { ExecUnityPwsh };
 
 
 /***/ }),
@@ -28217,21 +28223,24 @@ module.exports = parseParams
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
-const { ValidateInputs } = __nccwpck_require__(7229);
-const { ExecUnityPwsh } = __nccwpck_require__(8986);
-const core = __nccwpck_require__(2186);
+"use strict";
+var exports = __webpack_exports__;
 
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const inputs_1 = __nccwpck_require__(7063);
+const unity_1 = __nccwpck_require__(6938);
+const core = __nccwpck_require__(2186);
 const main = async () => {
     try {
-        const [editor, args] = await ValidateInputs();
-        await ExecUnityPwsh(editor, args);
-    } catch (error) {
+        const [editor, args] = await (0, inputs_1.ValidateInputs)();
+        await (0, unity_1.ExecUnity)(editor, args);
+    }
+    catch (error) {
         core.setFailed(error.message);
     }
-}
-
+};
 main();
 
 })();
