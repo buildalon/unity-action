@@ -1,17 +1,17 @@
-const core = require("@actions/core");
-const fs = require("fs").promises;
-const path = require("path");
+import core = require("@actions/core");
+import path = require("path");
+import fs = require('fs');
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
 
-async function ValidateInputs() {
+async function ValidateInputs(): Promise<[string, string[]]> {
     let editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
-    await fs.access(editorPath, fs.constants.X_OK);
+    await fs.promises.access(editorPath, fs.constants.X_OK);
     core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
@@ -50,7 +50,7 @@ async function ValidateInputs() {
         if (!projectPath) {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
-        await fs.access(projectPath, fs.constants.R_OK);
+        await fs.promises.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
@@ -59,10 +59,10 @@ async function ValidateInputs() {
             ? path.join(projectPath, `Builds`, `Logs`)
             : path.join(WORKSPACE, `Logs`);
         try {
-            await fs.access(logsDirectory, fs.constants.R_OK);
+            await fs.promises.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
             core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
-            await fs.mkdir(logsDirectory, { recursive: true });
+            await fs.promises.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
@@ -80,4 +80,4 @@ async function ValidateInputs() {
     return [editorPath, args];
 }
 
-module.exports = { ValidateInputs };
+export { ValidateInputs }
