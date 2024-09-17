@@ -26205,7 +26205,7 @@ async function ValidateInputs() {
         }
         await fs.promises.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, projectPath);
+        args.push(`-projectPath`, `"${projectPath}"`);
     }
     if (!inputArgs.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
