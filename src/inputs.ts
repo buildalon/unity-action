@@ -70,6 +70,9 @@ async function ValidateInputs(): Promise<[string, string[]]> {
         core.debug(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
     }
+    if (!inputArgs.includes(`-automated`)) {
+        args.push(`-automated`);
+    }
     if (inputArgs) {
         args.push(...inputArgs);
     }
