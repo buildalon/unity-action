@@ -7,14 +7,14 @@ import fs = require('fs');
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
 
-async function ExecUnity(editorPath: string, args: string[]): Promise<void> {
+export async function ExecUnity(editorPath: string, args: string[]): Promise<void> {
     const logPath = getLogFilePath(args);
     process.on('SIGINT', async () => {
-        await TryKillPid(pidFile);
+        await tryKillPid(pidFile);
         isCancelled = true;
     });
     process.on('SIGTERM', async () => {
-        await TryKillPid(pidFile);
+        await tryKillPid(pidFile);
         isCancelled = true;
     });
     let exitCode = 0;
@@ -37,7 +37,7 @@ async function ExecUnity(editorPath: string, args: string[]): Promise<void> {
             break;
     }
     if (!isCancelled) {
-        await TryKillPid(pidFile);
+        await tryKillPid(pidFile);
         if (exitCode !== 0) {
             throw Error(`Unity failed with exit code ${exitCode}`);
         }
@@ -52,7 +52,7 @@ function getLogFilePath(args: string[]): string {
     return args[logFileIndex + 1];
 }
 
-async function TryKillPid(pidFile: string): Promise<void> {
+async function tryKillPid(pidFile: string): Promise<void> {
     try {
         const fileHandle = await fs.promises.open(pidFile, 'r');
         try {
@@ -72,5 +72,3 @@ async function TryKillPid(pidFile: string): Promise<void> {
         // ignored
     }
 }
-
-export { ExecUnity }

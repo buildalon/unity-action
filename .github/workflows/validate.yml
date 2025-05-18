@@ -3,11 +3,9 @@ on:
   schedule:
     - cron: '0 0 * * 0' # Every Sunday at midnight
   push:
-    branches:
-      - 'main'
+    branches: ['main']
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 concurrency:
@@ -24,14 +22,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         unity-version: [2021.3.x, 2022.3.x, 6000.0.x]
         include: # for each os specify the build targets
           - os: ubuntu-latest
             build-target: StandaloneLinux64
           - os: windows-latest
             build-target: StandaloneWindows64
-          - os: macos-13
+          - os: macos-latest
             build-target: StandaloneOSX
     steps:
       - uses: actions/checkout@v4
