@@ -25752,11 +25752,11 @@ const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
 async function ExecUnity(editorPath, args) {
     const logPath = getLogFilePath(args);
-    process.on('SIGINT', async () => {
+    process.once('SIGINT', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
     });
-    process.on('SIGTERM', async () => {
+    process.once('SIGTERM', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
     });

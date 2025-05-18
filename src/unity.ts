@@ -9,11 +9,11 @@ let isCancelled = false;
 
 export async function ExecUnity(editorPath: string, args: string[]): Promise<void> {
     const logPath = getLogFilePath(args);
-    process.on('SIGINT', async () => {
+    process.once('SIGINT', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
     });
-    process.on('SIGTERM', async () => {
+    process.once('SIGTERM', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
     });
