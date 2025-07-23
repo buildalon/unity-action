@@ -52,7 +52,7 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
         }
         await fs.promises.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, `"${projectPath}"`);
+        args.push(`-projectPath`, projectPath);
     }
     if (!inputArgs.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
@@ -67,11 +67,6 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
-        // if (logPath.includes(` `)) {
-        //     core.warning(`Log path contains spaces, replacing with underscores: "${logPath}"`);
-        //     logPath.replace(/ /g, `_`);
-        // }
-        // await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
         core.debug(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
     }
