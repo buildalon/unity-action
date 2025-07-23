@@ -1,12 +1,12 @@
-export function shellSplit(str: string | undefined): string[] {
-  if (!str) return [];
+export function shellSplit(input: string | undefined): string[] {
+  if (!input) return [];
   const result: string[] = [];
   let current = '';
   let inSingle = false;
   let inDouble = false;
   let escape = false;
-  for (let i = 0; i < str.length; i++) {
-    const c = str[i];
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
     if (escape) {
       current += c;
       escape = false;

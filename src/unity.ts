@@ -76,29 +76,52 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
     onPid(processId);
     core.debug(`Unity process started with pid: ${processId}`);
     fs.writeFileSync(pidFile, String(processId));
-    const streamLog = () => {
-        if (fs.existsSync(logPath)) {
-            const logStream = fs.createReadStream(logPath, { encoding: 'utf8', flags: 'r' });
-            logStream.on('data', chunk => process.stdout.write(chunk));
-            logStream.on('end', () => { });
-            logStream.on('error', () => { });
+
+    // Wait for log file to appear
+    while (!fs.existsSync(logPath)) {
+        await new Promise(res => setTimeout(res, 100));
+    }
+
+    // Start tailing the log file
+    let lastSize = 0;
+    let logEnded = false;
+    const tailLog = async () => {
+        while (!logEnded) {
+            try {
+                const stats = fs.statSync(logPath);
+                if (stats.size > lastSize) {
+                    const fd = fs.openSync(logPath, 'r');
+                    const buffer = Buffer.alloc(stats.size - lastSize);
+                    fs.readSync(fd, buffer, 0, buffer.length, lastSize);
+                    process.stdout.write(buffer.toString('utf8'));
+                    fs.closeSync(fd);
+                    lastSize = stats.size;
+                }
+            } catch (err) {
+                // ignore read errors
+            }
+            await new Promise(res => setTimeout(res, 250));
         }
     };
-    const waitForLog = async () => {
-        while (!fs.existsSync(logPath)) {
-            await new Promise(res => setTimeout(res, 1));
-        }
-        streamLog();
-    };
-    waitForLog();
+
+    // Start log tailing in background
+    const tailPromise = tailLog();
+
     const exitCode: number = await new Promise((resolve, reject) => {
         unityProcess.on('exit', code => {
+            logEnded = true;
             resolve(code ?? 1);
         });
         unityProcess.on('error', err => {
+            logEnded = true;
             reject(err);
         });
     });
+
+    // Wait for log tailing to finish
+    await tailPromise;
+
+    // Wait for log file to be unlocked (optional, keep original logic)
     const timeout = 10000; // 10 seconds
     const start = Date.now();
     let fileLocked = true;
@@ -113,7 +136,7 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
             }
         } catch {
             fileLocked = true;
-            await new Promise(res => setTimeout(res, 1));
+            await new Promise(res => setTimeout(res, 100));
         }
     }
     return exitCode;

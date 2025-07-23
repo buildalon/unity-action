@@ -25814,29 +25814,41 @@ async function execUnity(editorPath, args, onPid) {
     onPid(processId);
     core.debug(`Unity process started with pid: ${processId}`);
     fs.writeFileSync(pidFile, String(processId));
-    const streamLog = () => {
-        if (fs.existsSync(logPath)) {
-            const logStream = fs.createReadStream(logPath, { encoding: 'utf8', flags: 'r' });
-            logStream.on('data', chunk => process.stdout.write(chunk));
-            logStream.on('end', () => { });
-            logStream.on('error', () => { });
+    while (!fs.existsSync(logPath)) {
+        await new Promise(res => setTimeout(res, 100));
+    }
+    let lastSize = 0;
+    let logEnded = false;
+    const tailLog = async () => {
+        while (!logEnded) {
+            try {
+                const stats = fs.statSync(logPath);
+                if (stats.size > lastSize) {
+                    const fd = fs.openSync(logPath, 'r');
+                    const buffer = Buffer.alloc(stats.size - lastSize);
+                    fs.readSync(fd, buffer, 0, buffer.length, lastSize);
+                    process.stdout.write(buffer.toString('utf8'));
+                    fs.closeSync(fd);
+                    lastSize = stats.size;
+                }
+            }
+            catch (err) {
+            }
+            await new Promise(res => setTimeout(res, 250));
         }
     };
-    const waitForLog = async () => {
-        while (!fs.existsSync(logPath)) {
-            await new Promise(res => setTimeout(res, 1));
-        }
-        streamLog();
-    };
-    waitForLog();
+    const tailPromise = tailLog();
     const exitCode = await new Promise((resolve, reject) => {
         unityProcess.on('exit', code => {
+            logEnded = true;
             resolve(code !== null && code !== void 0 ? code : 1);
         });
         unityProcess.on('error', err => {
+            logEnded = true;
             reject(err);
         });
     });
+    await tailPromise;
     const timeout = 10000;
     const start = Date.now();
     let fileLocked = true;
@@ -25853,7 +25865,7 @@ async function execUnity(editorPath, args, onPid) {
         }
         catch (_a) {
             fileLocked = true;
-            await new Promise(res => setTimeout(res, 1));
+            await new Promise(res => setTimeout(res, 100));
         }
     }
     return exitCode;
@@ -25930,16 +25942,16 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.shellSplit = shellSplit;
-function shellSplit(str) {
-    if (!str)
+function shellSplit(input) {
+    if (!input)
         return [];
     const result = [];
     let current = '';
     let inSingle = false;
     let inDouble = false;
     let escape = false;
-    for (let i = 0; i < str.length; i++) {
-        const c = str[i];
+    for (let i = 0; i < input.length; i++) {
+        const c = input[i];
         if (escape) {
             current += c;
             escape = false;
