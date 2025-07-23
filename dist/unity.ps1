@@ -6,15 +6,15 @@ param(
 )
 $process = $null
 try {
-    if (-not $EditorPath) {
+    if (-not "$EditorPath") {
         throw "-EditorPath is a required input"
     }
     Write-Host "::debug::Unity editor path: $EditorPath"
-    if (-not $Arguments) {
+    if (-not "$Arguments") {
         throw "Arguments is a required input"
     }
     Write-Host "::debug::Unity Editor Arguments: $Arguments"
-    if (-not $LogPath) {
+    if (-not "$LogPath") {
         throw "LogPath is a required input"
     }
     Write-Host "::debug::Log Path: $LogPath"
@@ -22,10 +22,10 @@ try {
     $process = Start-Process -FilePath "$EditorPath" -ArgumentList "$Arguments" -PassThru
     $lJob = Start-Job -ScriptBlock {
         param($log)
-        while (-not (Test-Path $log -Type Leaf)) {
+        while (-not (Test-Path "$log" -Type Leaf)) {
             Start-Sleep -Milliseconds 1
         }
-        Get-Content $log -Wait | Write-Host
+        Get-Content "$log" -Wait | Write-Host
     } -ArgumentList "$LogPath"
     $processId = $process.Id
     Write-Host "::debug::Unity process started with pid: $processId"
