@@ -25837,19 +25837,23 @@ async function execUnity(editorPath, args, onPid) {
             await new Promise(res => setTimeout(res, 250));
         }
     };
+    const timeout = 10000;
     const tailPromise = tailLog();
     const exitCode = await new Promise((resolve, reject) => {
-        unityProcess.on('exit', code => {
-            logEnded = true;
-            resolve(code !== null && code !== void 0 ? code : 1);
+        unityProcess.on('exit', (code) => {
+            setTimeout(() => {
+                logEnded = true;
+                resolve(code !== null && code !== void 0 ? code : 1);
+            }, timeout);
         });
-        unityProcess.on('error', err => {
-            logEnded = true;
-            reject(err);
+        unityProcess.on('error', (error) => {
+            setTimeout(() => {
+                logEnded = true;
+                reject(error);
+            }, timeout);
         });
     });
     await tailPromise;
-    const timeout = 10000;
     const start = Date.now();
     let fileLocked = true;
     while (fileLocked && Date.now() - start < timeout) {

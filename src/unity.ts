@@ -104,17 +104,23 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
         }
     };
 
+    const timeout = 10000; // 10 seconds
+
     // Start log tailing in background
     const tailPromise = tailLog();
 
     const exitCode: number = await new Promise((resolve, reject) => {
-        unityProcess.on('exit', code => {
-            logEnded = true;
-            resolve(code ?? 1);
+        unityProcess.on('exit', (code: number) => {
+            setTimeout(() => {
+                logEnded = true;
+                resolve(code ?? 1);
+            }, timeout);
         });
-        unityProcess.on('error', err => {
-            logEnded = true;
-            reject(err);
+        unityProcess.on('error', (error: Error) => {
+            setTimeout(() => {
+                logEnded = true;
+                reject(error);
+            }, timeout);
         });
     });
 
@@ -122,7 +128,6 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
     await tailPromise;
 
     // Wait for log file to be unlocked (optional, keep original logic)
-    const timeout = 10000; // 10 seconds
     const start = Date.now();
     let fileLocked = true;
     while (fileLocked && Date.now() - start < timeout) {
