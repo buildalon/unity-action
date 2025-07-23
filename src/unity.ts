@@ -8,7 +8,6 @@ const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
 
 export async function ExecUnity(editorPath: string, args: string[]): Promise<void> {
-    const logPath = getLogFilePath(args);
     process.once('SIGINT', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
@@ -85,7 +84,7 @@ async function execUnity(editorPath: string, args: string[]): Promise<number> {
             reject(err);
         });
     });
-    const timeout = 10000;
+    const timeout = 10000; // 10 seconds
     const start = Date.now();
     let fileLocked = true;
     while (fileLocked && Date.now() - start < timeout) {

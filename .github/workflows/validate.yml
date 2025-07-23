@@ -45,8 +45,12 @@ jobs:
       - name: Find Unity Template Path
         id: get-template
         run: |
+          # make sure UNITY_EDITOR_PATH is all forward slashes
+          UNITY_EDITOR_PATH="${{ env.UNITY_EDITOR_PATH }}"
+          UNITY_EDITOR_PATH=$(echo "${UNITY_EDITOR_PATH}" | sed 's|\\|/|g')
           EDITOR_ROOT_PATH="${UNITY_EDITOR_PATH/Editor*/}" # Remove the Editor part to get the root path to the Unity installation
           path=$(find "${EDITOR_ROOT_PATH}" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
+          path=$(echo "$path" | sed 's|\\|/|g')
           echo "path=$path"
           echo "path=$path" >> "$GITHUB_OUTPUT"
         shell: bash

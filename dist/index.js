@@ -25750,7 +25750,6 @@ const child_process_1 = __nccwpck_require__(2081);
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
 async function ExecUnity(editorPath, args) {
-    const logPath = getLogFilePath(args);
     process.once('SIGINT', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
