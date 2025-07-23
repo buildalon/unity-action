@@ -25875,62 +25875,63 @@ async function execUnity(editorPath, args, onPid) {
     return exitCode;
 }
 async function listProcesses() {
-    if (process.platform === 'win32') {
-        const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-        core.debug(`${winProcessCli}:`);
-        const { stdout } = await execAsync(winProcessCli);
-        const lines = stdout.split(/\r?\n/).filter(l => l.trim());
-        const procs = [];
-        for (const line of lines.slice(1)) {
-            const parts = line.split(',');
-            core.debug(line);
-            if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-                procs.push({
-                    name: parts[3] || parts[2],
-                    pid: Number(parts[1]),
-                    ppid: Number(parts[2])
-                });
+    try {
+        if (process.platform === 'win32') {
+            const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
+            core.debug(`${winProcessCli}:`);
+            const { stdout } = await execAsync(winProcessCli);
+            const lines = stdout.split(/\r?\n/).filter(l => l.trim());
+            const procs = [];
+            for (const line of lines.slice(1)) {
+                const parts = line.split(',');
+                core.debug(line);
+                if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
+                    procs.push({
+                        name: parts[3] || parts[2],
+                        pid: Number(parts[1]),
+                        ppid: Number(parts[2])
+                    });
+                }
             }
+            return procs;
         }
-        return procs;
+        else {
+            const unixProcessCli = 'ps -eo pid,ppid,comm';
+            core.debug(`${unixProcessCli}:`);
+            const { stdout } = await execAsync(unixProcessCli);
+            const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
+            const procs = [];
+            for (const line of lines) {
+                core.debug(line);
+                const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+                if (match) {
+                    procs.push({
+                        pid: Number(match[1]),
+                        ppid: Number(match[2]),
+                        name: match[3]
+                    });
+                }
+            }
+            return procs;
+        }
     }
-    else {
-        const unixProcessCli = 'ps -eo pid,ppid,comm';
-        core.debug(`${unixProcessCli}:`);
-        const { stdout } = await execAsync(unixProcessCli);
-        const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
-        const procs = [];
-        for (const line of lines) {
-            core.debug(line);
-            const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
-            if (match) {
-                procs.push({
-                    pid: Number(match[1]),
-                    ppid: Number(match[2]),
-                    name: match[3]
-                });
-            }
-        }
-        return procs;
+    catch (error) {
+        core.error(`Failed to list processes:\n${error}`);
+        return [];
     }
 }
 async function cleanupUnityOrphans(unityPid, beforePids) {
-    try {
-        const procs = await listProcesses();
-        for (const proc of procs) {
-            if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
-                try {
-                    process.kill(proc.pid);
-                    core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
-                }
-                catch (err) {
-                    core.error(`Failed to kill orphaned process ${proc.pid}: ${err}`);
-                }
+    const procs = await listProcesses();
+    for (const proc of procs) {
+        if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
+            try {
+                process.kill(proc.pid);
+                core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+            }
+            catch (error) {
+                core.error(`Failed to kill orphaned process ${proc.pid}:\n${error}`);
             }
         }
-    }
-    catch (err) {
-        core.error(`Failed to cleanup Unity orphans: ${err}`);
     }
 }
 
