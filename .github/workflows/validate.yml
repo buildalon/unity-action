@@ -45,7 +45,7 @@ jobs:
       - name: Find Unity Template Path
         id: get-template
         run: |
-          path=$(find "$${UNITY_EDITOR_PATH/Editor*/}" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
+          path=$(find "${{ env.UNITY_EDITOR_PATH }}" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
           echo "path=$path"
           echo "path=$path" >> "$GITHUB_OUTPUT"
         shell: bash
