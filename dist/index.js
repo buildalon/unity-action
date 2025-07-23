@@ -25701,7 +25701,7 @@ async function ValidateInputs() {
         }
         await fs.promises.access(projectPath, fs.constants.R_OK);
         core.debug(`Unity Project Path:\n  > "${projectPath}"`);
-        args.push(`-projectPath`, `"${projectPath}"`);
+        args.push(`-projectPath`, projectPath);
     }
     if (!inputArgs.includes(`-logFile`)) {
         const logsDirectory = projectPath !== undefined
@@ -25862,7 +25862,7 @@ async function execUnity(editorPath, args, onPid) {
 async function listProcesses() {
     if (process.platform === 'win32') {
         const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-        core.info(`[command]'${winProcessCli}'`);
+        core.info(`::group::[command]'${winProcessCli}'`);
         const { stdout } = await execAsync(winProcessCli);
         const lines = stdout.split(/\r?\n/).filter(l => l.trim());
         const procs = [];
@@ -25877,11 +25877,12 @@ async function listProcesses() {
                 });
             }
         }
+        core.info(`::endgroup::`);
         return procs;
     }
     else {
         const unixProcessCli = 'ps -eo pid,ppid,comm';
-        core.info(`[command]${unixProcessCli}`);
+        core.info(`::group::[command]${unixProcessCli}`);
         const { stdout } = await execAsync(unixProcessCli);
         const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
         const procs = [];
@@ -25896,6 +25897,7 @@ async function listProcesses() {
                 });
             }
         }
+        core.info(`::endgroup::`);
         return procs;
     }
 }
