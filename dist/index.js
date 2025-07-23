@@ -25774,7 +25774,7 @@ async function ExecUnity(editorPath, args) {
                         }
                     }
                 },
-                silent: true,
+                silent: false,
                 ignoreReturnCode: true
             });
             break;

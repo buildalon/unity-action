@@ -31,7 +31,7 @@ export async function ExecUnity(editorPath: string, args: string[]): Promise<voi
                         }
                     }
                 },
-                silent: true,
+                silent: false,
                 ignoreReturnCode: true
             });
             break;
