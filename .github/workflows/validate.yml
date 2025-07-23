@@ -43,13 +43,12 @@ jobs:
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
       - name: Find Unity Template Path
+        id: get-template
         run: |
-          $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
-          Write-Host "ROOT_PATH=$rootPath"
-          $templatePath = Get-ChildItem -Recurse -Filter "com.unity.template.3d*.tgz" -Path $rootPath | Select-Object -First 1 | Select-Object -ExpandProperty FullName
-          Write-Host "TEMPLATE_PATH=$templatePath"
-          echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
-        shell: pwsh
+          path=$(find "$${UNITY_EDITOR_PATH/Editor*/}" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
+          echo "path=$path"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+        shell: bash
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
         with:
@@ -60,7 +59,7 @@ jobs:
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/Test Project" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
+          args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/Test Project" -cloneFromTemplate "${{ steps.get-template.outputs.path }}"'
       - run: 'openupm add com.utilities.buildpipeline'
         name: Add Build Pipeline Package
         working-directory: ${{ github.workspace }}/Test Project

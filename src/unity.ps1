@@ -26,13 +26,13 @@ try {
             Start-Sleep -Milliseconds 1
         }
         Get-Content $log -Wait | Write-Host
-    } -ArgumentList $LogPath
+    } -ArgumentList "$LogPath"
     $processId = $process.Id
     Write-Host "::debug::Unity process started with pid: $processId"
     $processId | Out-File -FilePath "$env:RUNNER_TEMP/unity-process-id.txt"
     while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
-        Receive-Job $ljob
+        Receive-Job $lJob
         if ($null -eq (Get-Process -Id $processId -ErrorAction SilentlyContinue)) { break }
     }
     $fileLocked = $true
@@ -40,8 +40,8 @@ try {
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     do {
         try {
-            if (Test-Path -Path $LogPath) {
-                $file = Convert-Path $LogPath
+            if (Test-Path -Path "$LogPath") {
+                $file = Convert-Path "$LogPath"
                 $fileStream = [System.IO.File]::Open($file, 'Open', 'Write')
                 $fileStream.Close()
                 $fileStream.Dispose()
@@ -70,9 +70,9 @@ try {
         Start-Sleep -Milliseconds 1
     } while ($fileLocked)
     Start-Sleep -Milliseconds 1
-    Receive-Job $ljob
-    Stop-Job $ljob
-    Remove-Job $ljob
+    Receive-Job $lJob
+    Stop-Job $lJob
+    Remove-Job $lJob
     $exitCode = [int]$process.ExitCode
     Write-Host "::debug::Unity Process Exit Code: $exitCode"
     exit $exitCode
