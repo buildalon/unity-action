@@ -148,6 +148,7 @@ async function listProcesses(): Promise<ProcInfo[]> {
         const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
         const procs: ProcInfo[] = [];
         for (const line of lines) {
+            core.info(line);
             const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
             if (match) {
                 procs.push({
