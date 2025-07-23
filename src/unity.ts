@@ -22,7 +22,7 @@ export async function ExecUnity(editorPath: string, args: string[]): Promise<voi
         default:
             const unity = path.resolve(__dirname, `unity.ps1`);
             const pwsh = await io.which('pwsh', true);
-            exitCode = await exec(`"${pwsh}" -Command`, [`${unity} -EditorPath "${editorPath}" -Arguments "${args.join(` `)}" -LogPath "${logPath}"`], {
+            exitCode = await exec(`"${pwsh}" -Command`, [`${unity} -EditorPath "${editorPath}" -Arguments "${args.join(` `)}" -LogPath ${logPath}`], {
                 listeners: {
                     stdline: (data) => {
                         const line = data.toString().trim();
