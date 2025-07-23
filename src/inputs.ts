@@ -67,8 +67,13 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
+        // if (logPath.includes(` `)) {
+        //     core.warning(`Log path contains spaces, replacing with underscores: "${logPath}"`);
+        //     logPath.replace(/ /g, `_`);
+        // }
+        // await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
         core.debug(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `"${logPath}"`);
+        args.push(`-logFile`, logPath);
     }
     if (!inputArgs.includes(`-automated`)) {
         args.push(`-automated`);

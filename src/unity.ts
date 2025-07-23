@@ -1,8 +1,8 @@
+
 import core = require('@actions/core');
-import io = require('@actions/io');
 import path = require('path');
 import fs = require('fs');
-import { exec } from '@actions/exec';
+import { spawn } from 'child_process';
 
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
@@ -17,25 +17,7 @@ export async function ExecUnity(editorPath: string, args: string[]): Promise<voi
         await tryKillPid(pidFile);
         isCancelled = true;
     });
-    let exitCode = 0;
-    switch (process.platform) {
-        default:
-            const unity = path.resolve(__dirname, `unity.ps1`);
-            const pwsh = await io.which('pwsh', true);
-            exitCode = await exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
-                listeners: {
-                    stdline: (data) => {
-                        const line = data.toString().trim();
-                        if (line && line.length > 0) {
-                            core.info(line);
-                        }
-                    }
-                },
-                silent: false,
-                ignoreReturnCode: true
-            });
-            break;
-    }
+    const exitCode = await execUnity(editorPath, args);
     if (!isCancelled) {
         await tryKillPid(pidFile);
         if (exitCode !== 0) {
@@ -71,4 +53,56 @@ async function tryKillPid(pidFile: string): Promise<void> {
     } catch (error) {
         // ignored
     }
+}
+
+async function execUnity(editorPath: string, args: string[]): Promise<number> {
+    const logPath = getLogFilePath(args);
+    core.info(`[command]"${editorPath}" ${args.join(' ')}`);
+    const unityProcess = spawn(editorPath, args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    const processId = unityProcess.pid;
+    core.debug(`Unity process started with pid: ${processId}`);
+    fs.writeFileSync(pidFile, String(processId));
+    const streamLog = () => {
+        if (fs.existsSync(logPath)) {
+            const logStream = fs.createReadStream(logPath, { encoding: 'utf8', flags: 'r' });
+            logStream.on('data', chunk => process.stdout.write(chunk));
+            logStream.on('end', () => { });
+            logStream.on('error', () => { });
+        }
+    };
+    const waitForLog = async () => {
+        while (!fs.existsSync(logPath)) {
+            await new Promise(res => setTimeout(res, 1));
+        }
+        streamLog();
+    };
+    waitForLog();
+    const exitCode: number = await new Promise((resolve, reject) => {
+        unityProcess.on('exit', code => {
+            resolve(code ?? 1);
+        });
+        unityProcess.on('error', err => {
+            reject(err);
+        });
+    });
+    const timeout = 10000;
+    const start = Date.now();
+    let fileLocked = true;
+    while (fileLocked && Date.now() - start < timeout) {
+        try {
+            if (fs.existsSync(logPath)) {
+                const fd = fs.openSync(logPath, 'r+');
+                fs.closeSync(fd);
+                fileLocked = false;
+            } else {
+                fileLocked = false;
+            }
+        } catch {
+            fileLocked = true;
+            await new Promise(res => setTimeout(res, 1));
+        }
+    }
+
+    core.debug(`Unity Process Exit Code: ${exitCode}`);
+    return exitCode;
 }
