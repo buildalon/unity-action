@@ -25653,6 +25653,7 @@ exports.ValidateInputs = ValidateInputs;
 const core = __nccwpck_require__(2186);
 const path = __nccwpck_require__(1017);
 const fs = __nccwpck_require__(7147);
+const utils_1 = __nccwpck_require__(1314);
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
@@ -25665,9 +25666,7 @@ async function ValidateInputs() {
     core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
-    const inputArgs = inputArgsString !== undefined
-        ? inputArgsString.split(` `)
-        : [];
+    const inputArgs = (0, utils_1.shellSplit)(inputArgsString);
     if (inputArgs.includes(`-version`)) {
         return [editorPath, [`-version`]];
     }
@@ -25813,6 +25812,66 @@ async function tryKillPid(pidFile) {
     }
     catch (error) {
     }
+}
+
+
+/***/ }),
+
+/***/ 1314:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.shellSplit = shellSplit;
+function shellSplit(input) {
+    if (!input)
+        return [];
+    const result = [];
+    let current = '';
+    let inSingle = false;
+    let inDouble = false;
+    let escape = false;
+    for (let i = 0; i < input.length; i++) {
+        const c = input[i];
+        if (escape) {
+            current += c;
+            escape = false;
+        }
+        else if (c === '\\') {
+            escape = true;
+        }
+        else if (inSingle) {
+            if (c === "'")
+                inSingle = false;
+            else
+                current += c;
+        }
+        else if (inDouble) {
+            if (c === '"')
+                inDouble = false;
+            else
+                current += c;
+        }
+        else if (c === "'") {
+            inSingle = true;
+        }
+        else if (c === '"') {
+            inDouble = true;
+        }
+        else if (/\s/.test(c)) {
+            if (current.length > 0) {
+                result.push(current);
+                current = '';
+            }
+        }
+        else {
+            current += c;
+        }
+    }
+    if (current.length > 0)
+        result.push(current);
+    return result;
 }
 
 
