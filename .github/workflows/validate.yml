@@ -45,7 +45,8 @@ jobs:
       - name: Find Unity Template Path
         id: template
         run: |
-          UNITY_EDITOR_PATH="${{ env.UNITY_EDITOR_PATH }}//\\//}"
+          UNITY_EDITOR_PATH="${{ env.UNITY_EDITOR_PATH }}"
+          UNITY_EDITOR_PATH="${UNITY_EDITOR_PATH//\\//}"
           root_path="${UNITY_EDITOR_PATH/Editor*/}"
           echo "ROOT_PATH=$root_path"
           template_path=$(find "$root_path" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
@@ -57,7 +58,8 @@ jobs:
           echo "TEMPLATE_PATH=$template_path"
           echo "TEMPLATE_PATH=$template_path" >> "$GITHUB_OUTPUT"
 
-          UNITY_PROJECT_PATH="${{ env.UNITY_PROJECT_PATH }}//\\//}"
+          UNITY_PROJECT_PATH="${{ env.UNITY_PROJECT_PATH }}"
+          UNITY_PROJECT_PATH="${UNITY_PROJECT_PATH//\\//}"
 
           if [ -z "$UNITY_PROJECT_PATH" ]; then
             echo "UNITY_PROJECT_PATH=${{ github.workspace }}/Test Project" >> "$GITHUB_ENV"
