@@ -125,7 +125,7 @@ async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
         // Use PowerShell Get-CimInstance for process listing
         const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-        core.info(`::group::[command]'${winProcessCli}'`);
+        core.info(`::group::'${winProcessCli}'`);
         const { stdout } = await execAsync(winProcessCli);
         const lines = stdout.split(/\r?\n/).filter(l => l.trim());
         const procs: ProcInfo[] = [];
@@ -144,7 +144,7 @@ async function listProcesses(): Promise<ProcInfo[]> {
         return procs;
     } else {
         const unixProcessCli = 'ps -eo pid,ppid,comm';
-        core.info(`::group::[command]${unixProcessCli}`);
+        core.info(`::group::${unixProcessCli}`);
         const { stdout } = await execAsync(unixProcessCli);
         const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
         const procs: ProcInfo[] = [];

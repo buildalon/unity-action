@@ -1,6 +1,7 @@
 import core = require("@actions/core");
 import path = require("path");
 import fs = require('fs');
+import { shellSplit } from './utils';
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
@@ -15,9 +16,7 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
     core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
-    const inputArgs = inputArgsString !== undefined
-        ? inputArgsString.split(` `)
-        : [];
+    const inputArgs = shellSplit(inputArgsString);
     if (inputArgs.includes(`-version`)) {
         return [editorPath, [`-version`]];
     }
