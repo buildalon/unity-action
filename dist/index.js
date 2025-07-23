@@ -25921,7 +25921,9 @@ async function listProcesses() {
     }
 }
 async function cleanupUnityOrphans(unityPid, beforePids) {
+    var _a;
     const procs = await listProcesses();
+    core.info(`::group::Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
         if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
             try {
@@ -25929,10 +25931,16 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
             }
             catch (error) {
-                core.error(`Failed to kill orphaned process ${proc.pid}:\n${error}`);
+                if (error && (error.code === 'ESRCH' || ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('ESRCH')))) {
+                    core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+                }
+                else {
+                    core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
+                }
             }
         }
     }
+    core.info(`::endgroup::`);
 }
 
 
@@ -25955,39 +25963,52 @@ function shellSplit(input) {
     let escape = false;
     for (let i = 0; i < input.length; i++) {
         const c = input[i];
-        if (escape) {
-            current += c;
-            escape = false;
-        }
-        else if (c === '\\') {
-            escape = true;
-        }
-        else if (inSingle) {
-            if (c === "'")
-                inSingle = false;
-            else
+        if (inSingle) {
+            if (escape) {
                 current += c;
+                escape = false;
+            }
+            else if (c === '\\') {
+                escape = true;
+            }
+            else if (c === "'") {
+                inSingle = false;
+            }
+            else {
+                current += c;
+            }
         }
         else if (inDouble) {
-            if (c === '"')
-                inDouble = false;
-            else
+            if (escape) {
                 current += c;
-        }
-        else if (c === "'") {
-            inSingle = true;
-        }
-        else if (c === '"') {
-            inDouble = true;
-        }
-        else if (/\s/.test(c)) {
-            if (current.length > 0) {
-                result.push(current);
-                current = '';
+                escape = false;
+            }
+            else if (c === '\\') {
+                escape = true;
+            }
+            else if (c === '"') {
+                inDouble = false;
+            }
+            else {
+                current += c;
             }
         }
         else {
-            current += c;
+            if (c === "'") {
+                inSingle = true;
+            }
+            else if (c === '"') {
+                inDouble = true;
+            }
+            else if (/\s/.test(c)) {
+                if (current.length > 0) {
+                    result.push(current);
+                    current = '';
+                }
+            }
+            else {
+                current += c;
+            }
         }
     }
     if (current.length > 0)

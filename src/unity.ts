@@ -1,4 +1,3 @@
-
 import core = require('@actions/core');
 import path = require('path');
 import fs = require('fs');
@@ -197,6 +196,7 @@ async function listProcesses(): Promise<ProcInfo[]> {
 
 async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
     const procs = await listProcesses();
+    core.info(`::group::Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
         // Only consider processes whose parent is Unity or weren't present before Unity started
         if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
@@ -204,8 +204,13 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
                 process.kill(proc.pid);
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
             } catch (error) {
-                core.error(`Failed to kill orphaned process ${proc.pid}:\n${error}`);
+                if (error && (error.code === 'ESRCH' || error.message?.includes('ESRCH'))) {
+                    core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+                } else {
+                    core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
+                }
             }
         }
     }
+    core.info(`::endgroup::`);
 }
