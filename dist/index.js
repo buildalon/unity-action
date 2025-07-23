@@ -25718,7 +25718,7 @@ async function ValidateInputs() {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `"${logPath}"`);
+        args.push(`-logFile`, logPath);
     }
     if (!inputArgs.includes(`-automated`)) {
         args.push(`-automated`);
@@ -25765,7 +25765,7 @@ async function ExecUnity(editorPath, args) {
         default:
             const unity = __nccwpck_require__.ab + "unity.ps1";
             const pwsh = await io.which('pwsh', true);
-            exitCode = await (0, exec_1.exec)(`"${pwsh}" -Command`, [`${unity} -EditorPath "${editorPath}" -Arguments "${args.join(` `)}" -LogPath ${logPath}`], {
+            exitCode = await (0, exec_1.exec)(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
                 listeners: {
                     stdline: (data) => {
                         const line = data.toString().trim();
