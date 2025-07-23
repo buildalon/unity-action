@@ -68,7 +68,7 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
         core.debug(`Log File Path:\n  > "${logPath}"`);
-        args.push(`-logFile`, `"${logPath}"`);
+        args.push(`-logFile`, logPath);
     }
     if (!inputArgs.includes(`-automated`)) {
         args.push(`-automated`);
