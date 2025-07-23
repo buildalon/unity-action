@@ -25969,7 +25969,14 @@ function shellSplit(input) {
                 escape = false;
             }
             else if (c === '\\') {
-                escape = true;
+                const next = input[i + 1];
+                if (next === "'" || next === '\\') {
+                    escape = true;
+                    continue;
+                }
+                else {
+                    current += c;
+                }
             }
             else if (c === "'") {
                 inSingle = false;
@@ -25984,7 +25991,14 @@ function shellSplit(input) {
                 escape = false;
             }
             else if (c === '\\') {
-                escape = true;
+                const next = input[i + 1];
+                if (next === '"' || next === '\\') {
+                    escape = true;
+                    continue;
+                }
+                else {
+                    current += c;
+                }
             }
             else if (c === '"') {
                 inDouble = false;

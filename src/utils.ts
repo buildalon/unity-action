@@ -12,7 +12,14 @@ export function shellSplit(input: string | undefined): string[] {
         current += c;
         escape = false;
       } else if (c === '\\') {
-        escape = true;
+        // Only escape if next char is a single quote or backslash
+        const next = input[i + 1];
+        if (next === "'" || next === '\\') {
+          escape = true;
+          continue;
+        } else {
+          current += c;
+        }
       } else if (c === "'") {
         inSingle = false;
       } else {
@@ -23,7 +30,14 @@ export function shellSplit(input: string | undefined): string[] {
         current += c;
         escape = false;
       } else if (c === '\\') {
-        escape = true;
+        // Only escape if next char is a double quote or backslash
+        const next = input[i + 1];
+        if (next === '"' || next === '\\') {
+          escape = true;
+          continue;
+        } else {
+          current += c;
+        }
       } else if (c === '"') {
         inDouble = false;
       } else {
@@ -40,6 +54,7 @@ export function shellSplit(input: string | undefined): string[] {
           current = '';
         }
       } else {
+        // Only treat backslash as escape inside quotes; outside, preserve it
         current += c;
       }
     }
