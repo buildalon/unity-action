@@ -50,11 +50,12 @@ jobs:
           root_path="${UNITY_EDITOR_PATH/Editor*/}"
           echo "ROOT_PATH=$root_path"
           template_path=$(find "$root_path" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
-          # verify that the file exists
+
           if [ ! -f "$template_path" ]; then
             echo "Template file not found at $template_path"
             exit 1
           fi
+
           echo "TEMPLATE_PATH=$template_path"
           echo "TEMPLATE_PATH=$template_path" >> "$GITHUB_OUTPUT"
 
@@ -62,10 +63,12 @@ jobs:
           UNITY_PROJECT_PATH="${UNITY_PROJECT_PATH//\\//}"
 
           if [ -z "$UNITY_PROJECT_PATH" ]; then
-            echo "UNITY_PROJECT_PATH=${{ github.workspace }}/Test Project" >> "$GITHUB_ENV"
-          else
-            echo "UNITY_PROJECT_PATH=$UNITY_PROJECT_PATH" >> "$GITHUB_ENV"
+            echo "UNITY_PROJECT_PATH=" >> "$GITHUB_ENV"
           fi
+
+          echo "Creating Unity project path: $UNITY_PROJECT_PATH"
+          mkdir -p "$UNITY_PROJECT_PATH"
+          echo "UNITY_PROJECT_PATH=$UNITY_PROJECT_PATH" >> "$GITHUB_ENV"
         shell: bash
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
