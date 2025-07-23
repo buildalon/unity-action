@@ -153,13 +153,13 @@ async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
         // Use PowerShell Get-CimInstance for process listing
         const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-        core.info(`::group::'${winProcessCli}'`);
+        core.debug(`${winProcessCli}:`);
         const { stdout } = await execAsync(winProcessCli);
         const lines = stdout.split(/\r?\n/).filter(l => l.trim());
         const procs: ProcInfo[] = [];
         for (const line of lines.slice(1)) {
             const parts = line.split(',');
-            core.info(line);
+            core.debug(line);
             if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
                 procs.push({
                     name: parts[3] || parts[2], // Name may be at index 2 or 3 depending on output
@@ -168,16 +168,15 @@ async function listProcesses(): Promise<ProcInfo[]> {
                 });
             }
         }
-        core.info(`::endgroup::`);
         return procs;
     } else {
         const unixProcessCli = 'ps -eo pid,ppid,comm';
-        core.info(`::group::${unixProcessCli}`);
+        core.debug(`${unixProcessCli}:`);
         const { stdout } = await execAsync(unixProcessCli);
         const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
         const procs: ProcInfo[] = [];
         for (const line of lines) {
-            core.info(line);
+            core.debug(line);
             const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
             if (match) {
                 procs.push({
@@ -187,7 +186,6 @@ async function listProcesses(): Promise<ProcInfo[]> {
                 });
             }
         }
-        core.info(`::endgroup::`);
         return procs;
     }
 }
@@ -196,8 +194,8 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
     try {
         const procs = await listProcesses();
         for (const proc of procs) {
-            // Only consider processes whose parent is Unity and weren't present before Unity started
-            if (proc.ppid === unityPid && !beforePids.has(proc.pid)) {
+            // Only consider processes whose parent is Unity or weren't present before Unity started
+            if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
                 try {
                     process.kill(proc.pid);
                     core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);

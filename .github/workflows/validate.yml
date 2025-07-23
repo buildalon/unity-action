@@ -43,25 +43,15 @@ jobs:
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
       - name: Find Unity Template Path
-        id: template
         run: |
-          UNITY_EDITOR_PATH="${{ env.UNITY_EDITOR_PATH }}"
-          UNITY_EDITOR_PATH="${UNITY_EDITOR_PATH//\\//}"
-          root_path="${UNITY_EDITOR_PATH/Editor*/}"
-          echo "ROOT_PATH=$root_path"
-          template_path=$(find "$root_path" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
-
-          if [ ! -f "$template_path" ]; then
-            echo "Template file not found at $template_path"
-            exit 1
-          fi
-
-          echo "TEMPLATE_PATH=$template_path"
-          echo "TEMPLATE_PATH=$template_path" >> "$GITHUB_OUTPUT"
-
-          PROJECT_PATH="${{ github.workspace }}/Test Project"
-          echo "UNITY_PROJECT_PATH=$PROJECT_PATH" >> "$GITHUB_ENV"
-        shell: bash
+          $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
+          Write-Host "ROOT_PATH=$rootPath"
+          $templatePath = Get-ChildItem -Recurse -Filter "com.unity.template.3d*.tgz" -Path $rootPath | Select-Object -First 1 | Select-Object -ExpandProperty FullName
+          Write-Host "TEMPLATE_PATH=$templatePath"
+          echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_ENV
+          $projectPath = "${{ github.workspace }}/Test Project"
+          echo "UNITY_PROJECT_PATH=$projectPath" >> $env:GITHUB_ENV
+        shell: pwsh
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
         with:
@@ -72,7 +62,7 @@ jobs:
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ steps.template.outputs.TEMPLATE_PATH }}"'
+          args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ env.TEMPLATE_PATH }}"'
       - run: 'openupm add com.virtualmaker.buildalon'
         name: Add Build Pipeline Package
         working-directory: ${{ env.UNITY_PROJECT_PATH }}
