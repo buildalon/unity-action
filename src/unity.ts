@@ -148,8 +148,41 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
 
 type ProcInfo = { pid: number, ppid: number, name: string };
 
+const systemProcessNames = [
+    'System',
+    'Idle',
+    'Spotlight',
+    'svchost.exe',
+    'explorer.exe',
+    'services.exe',
+    'wininit.exe',
+    'winlogon.exe',
+    'lsass.exe',
+    'csrss.exe',
+    'smss.exe',
+    'init',
+    'kthreadd',
+    'kworker',
+    'systemd',
+    'launchd',
+    'kernel_task',
+    'Finder',
+    'Dock',
+    'WindowServer',
+    'logd',
+    'securityd',
+    'notifyd',
+    'unattended-upgrades',
+    'cron',
+    'atd',
+    'dbus-daemon'
+];
+
 async function listProcesses(): Promise<ProcInfo[]> {
     try {
+        const filterSystem = (name: string) => {
+            return !systemProcessNames.some(sysName => name && name.toLowerCase().includes(sysName.toLowerCase()));
+        };
         if (process.platform === 'win32') {
             // Use PowerShell Get-CimInstance for process listing
             const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
@@ -161,11 +194,14 @@ async function listProcesses(): Promise<ProcInfo[]> {
                 const parts = line.split(',');
                 core.debug(line);
                 if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-                    procs.push({
-                        name: parts[3] || parts[2], // Name may be at index 2 or 3 depending on output
-                        pid: Number(parts[1]),
-                        ppid: Number(parts[2])
-                    });
+                    const procName = parts[3] || parts[2];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            name: procName,
+                            pid: Number(parts[1]),
+                            ppid: Number(parts[2])
+                        });
+                    }
                 }
             }
             return procs;
@@ -179,11 +215,14 @@ async function listProcesses(): Promise<ProcInfo[]> {
                 core.debug(line);
                 const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
                 if (match) {
-                    procs.push({
-                        pid: Number(match[1]),
-                        ppid: Number(match[2]),
-                        name: match[3]
-                    });
+                    const procName = match[3];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            pid: Number(match[1]),
+                            ppid: Number(match[2]),
+                            name: procName
+                        });
+                    }
                 }
             }
             return procs;
@@ -198,8 +237,12 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
     const procs = await listProcesses();
     core.info(`::group::Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
-        // Only consider processes whose parent is Unity or weren't present before Unity started
-        if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
+        // Skip system processes
+        if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+            continue;
+        }
+        if (proc.ppid === unityPid) {
+            // Only kill processes whose parent is Unity
             try {
                 process.kill(proc.pid);
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
@@ -210,6 +253,9 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
                     core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
                 }
             }
+        } else if (!beforePids.has(proc.pid)) {
+            // Log processes that weren't present before Unity started but are not Unity children
+            core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
         }
     }
     core.info(`::endgroup::`);

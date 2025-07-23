@@ -25874,8 +25874,40 @@ async function execUnity(editorPath, args, onPid) {
     }
     return exitCode;
 }
+const systemProcessNames = [
+    'System',
+    'Idle',
+    'Spotlight',
+    'svchost.exe',
+    'explorer.exe',
+    'services.exe',
+    'wininit.exe',
+    'winlogon.exe',
+    'lsass.exe',
+    'csrss.exe',
+    'smss.exe',
+    'init',
+    'kthreadd',
+    'kworker',
+    'systemd',
+    'launchd',
+    'kernel_task',
+    'Finder',
+    'Dock',
+    'WindowServer',
+    'logd',
+    'securityd',
+    'notifyd',
+    'unattended-upgrades',
+    'cron',
+    'atd',
+    'dbus-daemon'
+];
 async function listProcesses() {
     try {
+        const filterSystem = (name) => {
+            return !systemProcessNames.some(sysName => name && name.toLowerCase().includes(sysName.toLowerCase()));
+        };
         if (process.platform === 'win32') {
             const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
             core.debug(`${winProcessCli}:`);
@@ -25886,11 +25918,14 @@ async function listProcesses() {
                 const parts = line.split(',');
                 core.debug(line);
                 if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-                    procs.push({
-                        name: parts[3] || parts[2],
-                        pid: Number(parts[1]),
-                        ppid: Number(parts[2])
-                    });
+                    const procName = parts[3] || parts[2];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            name: procName,
+                            pid: Number(parts[1]),
+                            ppid: Number(parts[2])
+                        });
+                    }
                 }
             }
             return procs;
@@ -25905,11 +25940,14 @@ async function listProcesses() {
                 core.debug(line);
                 const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
                 if (match) {
-                    procs.push({
-                        pid: Number(match[1]),
-                        ppid: Number(match[2]),
-                        name: match[3]
-                    });
+                    const procName = match[3];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            pid: Number(match[1]),
+                            ppid: Number(match[2]),
+                            name: procName
+                        });
+                    }
                 }
             }
             return procs;
@@ -25925,7 +25963,10 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
     const procs = await listProcesses();
     core.info(`::group::Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
-        if (proc.ppid === unityPid || !beforePids.has(proc.pid)) {
+        if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+            continue;
+        }
+        if (proc.ppid === unityPid) {
             try {
                 process.kill(proc.pid);
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
@@ -25938,6 +25979,9 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
                     core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
                 }
             }
+        }
+        else if (!beforePids.has(proc.pid)) {
+            core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
         }
     }
     core.info(`::endgroup::`);
