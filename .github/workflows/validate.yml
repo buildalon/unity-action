@@ -59,16 +59,8 @@ jobs:
           echo "TEMPLATE_PATH=$template_path"
           echo "TEMPLATE_PATH=$template_path" >> "$GITHUB_OUTPUT"
 
-          UNITY_PROJECT_PATH="${{ env.UNITY_PROJECT_PATH }}"
-          UNITY_PROJECT_PATH="${UNITY_PROJECT_PATH//\\//}"
-
-          if [ -z "$UNITY_PROJECT_PATH" ]; then
-            echo "UNITY_PROJECT_PATH=" >> "$GITHUB_ENV"
-          fi
-
-          echo "Creating Unity project path: $UNITY_PROJECT_PATH"
-          mkdir -p "$UNITY_PROJECT_PATH"
-          echo "UNITY_PROJECT_PATH=$UNITY_PROJECT_PATH" >> "$GITHUB_ENV"
+          PROJECT_PATH="${{ github.workspace }}/Test Project"
+          echo "UNITY_PROJECT_PATH=$PROJECT_PATH" >> "$GITHUB_ENV"
         shell: bash
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
