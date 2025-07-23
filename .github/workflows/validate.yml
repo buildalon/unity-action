@@ -45,7 +45,7 @@ jobs:
       - name: Find Unity Template Path
         id: template
         run: |
-          UNITY_EDITOR_PATH="${UNITY_EDITOR_PATH//\\//}"
+          UNITY_EDITOR_PATH="${{ env.UNITY_EDITOR_PATH }}//\\//}"
           root_path="${UNITY_EDITOR_PATH/Editor*/}"
           echo "ROOT_PATH=$root_path"
           template_path=$(find "$root_path" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
@@ -56,6 +56,14 @@ jobs:
           fi
           echo "TEMPLATE_PATH=$template_path"
           echo "TEMPLATE_PATH=$template_path" >> "$GITHUB_OUTPUT"
+
+          UNITY_PROJECT_PATH="${{ env.UNITY_PROJECT_PATH }}//\\//}"
+
+          if [ -z "$UNITY_PROJECT_PATH" ]; then
+            echo "UNITY_PROJECT_PATH=${{ github.workspace }}/Test Project" >> "$GITHUB_ENV"
+          else
+            echo "UNITY_PROJECT_PATH=$UNITY_PROJECT_PATH" >> "$GITHUB_ENV"
+          fi
         shell: bash
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
@@ -70,11 +78,11 @@ jobs:
           args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ steps.template.outputs.TEMPLATE_PATH }}"'
       - run: 'openupm add com.utilities.buildpipeline'
         name: Add Build Pipeline Package
-        working-directory: "${{ env.UNITY_PROJECT_PATH }}
+        working-directory: ${{ env.UNITY_PROJECT_PATH }}
       - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
-          project-path: "${{ env.UNITY_PROJECT_PATH }}
+          project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
