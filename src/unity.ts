@@ -1,8 +1,8 @@
-import exec = require('@actions/exec');
 import core = require('@actions/core');
 import io = require('@actions/io');
 import path = require('path');
 import fs = require('fs');
+import { exec } from '@actions/exec';
 
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
@@ -22,7 +22,7 @@ export async function ExecUnity(editorPath: string, args: string[]): Promise<voi
         default:
             const unity = path.resolve(__dirname, `unity.ps1`);
             const pwsh = await io.which('pwsh', true);
-            exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
+            exitCode = await exec(`"${pwsh}" -Command`, [`${unity} -EditorPath "${editorPath}" -Arguments "${args.join(` `)}" -LogPath "${logPath}"`], {
                 listeners: {
                     stdline: (data) => {
                         const line = data.toString().trim();

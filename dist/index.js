@@ -25743,11 +25743,11 @@ async function ValidateInputs() {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ExecUnity = ExecUnity;
-const exec = __nccwpck_require__(1514);
 const core = __nccwpck_require__(2186);
 const io = __nccwpck_require__(7436);
 const path = __nccwpck_require__(1017);
 const fs = __nccwpck_require__(7147);
+const exec_1 = __nccwpck_require__(1514);
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
 let isCancelled = false;
 async function ExecUnity(editorPath, args) {
@@ -25765,7 +25765,7 @@ async function ExecUnity(editorPath, args) {
         default:
             const unity = __nccwpck_require__.ab + "unity.ps1";
             const pwsh = await io.which('pwsh', true);
-            exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
+            exitCode = await (0, exec_1.exec)(`"${pwsh}" -Command`, [`${unity} -EditorPath "${editorPath}" -Arguments "${args.join(` `)}" -LogPath "${logPath}"`], {
                 listeners: {
                     stdline: (data) => {
                         const line = data.toString().trim();
