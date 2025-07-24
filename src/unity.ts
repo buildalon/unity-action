@@ -67,6 +67,12 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     }
     onPid({ pid: processId, ppid: process.pid, name: command.editorPath });
     core.debug(`Unity process started with pid: ${processId}`);
+    // make sure the directory for the PID file exists
+    const pidDir = path.dirname(pidFile);
+    if (!fs.existsSync(pidDir)) {
+        fs.mkdirSync(pidDir, { recursive: true });
+    }
+    // Write the PID to the PID file
     fs.writeFileSync(pidFile, String(processId));
     const logPollingInterval = 100; // milliseconds
     // Wait for log file to appear

@@ -129,46 +129,54 @@ export async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
       // Use PowerShell Get-CimInstance for process listing
       const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-      core.info(`${winProcessCli}:`);
-      const { stdout } = await execAsync(winProcessCli);
-      const lines = stdout.split(/\r?\n/).filter(l => l.trim());
-      const procs: ProcInfo[] = [];
-      for (const line of lines.slice(1)) {
-        const parts = line.split(',');
-        core.info(line);
-        if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-          const procName = parts[3] || parts[2];
-          if (filterSystem(procName)) {
-            procs.push({
-              name: procName,
-              pid: Number(parts[1]),
-              ppid: Number(parts[2])
-            });
+      core.startGroup(`${winProcessCli}:`);
+      try {
+        const { stdout } = await execAsync(winProcessCli);
+        const lines = stdout.split(/\r?\n/).filter(l => l.trim());
+        const procs: ProcInfo[] = [];
+        for (const line of lines.slice(1)) {
+          const parts = line.split(',');
+          core.info(line);
+          if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
+            const procName = parts[3] || parts[2];
+            if (filterSystem(procName)) {
+              procs.push({
+                name: procName,
+                pid: Number(parts[1]),
+                ppid: Number(parts[2])
+              });
+            }
           }
         }
+        return procs;
+      } finally {
+        core.endGroup();
       }
-      return procs;
     } else {
       const unixProcessCli = 'ps -eo pid,ppid,comm';
-      core.info(`${unixProcessCli}:`);
-      const { stdout } = await execAsync(unixProcessCli);
-      const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
-      const procs: ProcInfo[] = [];
-      for (const line of lines) {
-        core.info(line);
-        const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
-        if (match) {
-          const procName = match[3];
-          if (filterSystem(procName)) {
-            procs.push({
-              pid: Number(match[1]),
-              ppid: Number(match[2]),
-              name: procName
-            });
+      core.startGroup(`${unixProcessCli}:`);
+      try {
+        const { stdout } = await execAsync(unixProcessCli);
+        const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
+        const procs: ProcInfo[] = [];
+        for (const line of lines) {
+          core.info(line);
+          const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+          if (match) {
+            const procName = match[3];
+            if (filterSystem(procName)) {
+              procs.push({
+                pid: Number(match[1]),
+                ppid: Number(match[2]),
+                name: procName
+              });
+            }
           }
         }
+        return procs;
+      } finally {
+        core.endGroup();
       }
-      return procs;
     }
   } catch (error) {
     core.error(`Failed to list processes:\n${error}`);
