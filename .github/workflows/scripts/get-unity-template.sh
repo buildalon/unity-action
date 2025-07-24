@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script is used to fetch the Unity template from the editor path in env variables.
-set -xe
+set -e
 
 if [ -z "$UNITY_EDITOR_PATH" ]; then
   echo "UNITY_EDITOR_PATH is not set. Please set it to the path of your Unity editor."
