@@ -25727,7 +25727,7 @@ async function ValidateInputs() {
     }
     core.info(`Args:`);
     for (const arg of args) {
-        core.info(`  > ${arg}`);
+        core.info(` ${arg}`);
     }
     return { editorPath, args };
 }
@@ -26024,7 +26024,7 @@ async function listProcesses() {
                 const procs = [];
                 for (const line of lines.slice(1)) {
                     const parts = line.split(',');
-                    core.info(line);
+                    core.debug(line);
                     if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
                         const procName = parts[3] || parts[2];
                         if (filterSystem(procName)) {
@@ -26054,7 +26054,7 @@ async function listProcesses() {
                 const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
                 const procs = [];
                 for (const line of lines) {
-                    core.info(line);
+                    core.debug(line);
                     const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
                     if (match) {
                         const procName = match[3];
@@ -26083,9 +26083,7 @@ async function listProcesses() {
 }
 async function cleanupProcessOrphans(parentProcess, beforePids) {
     const procs = await listProcesses();
-    if (core.isDebug()) {
-        core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
-    }
+    core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
     try {
         for (const proc of procs) {
             if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
@@ -26111,9 +26109,7 @@ async function cleanupProcessOrphans(parentProcess, beforePids) {
         }
     }
     finally {
-        if (core.isDebug()) {
-            core.endGroup();
-        }
+        core.endGroup();
     }
 }
 async function tryKillPid(pidFilePath) {

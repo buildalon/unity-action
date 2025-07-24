@@ -42,7 +42,8 @@ else
     done
 fi
 
-TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "*.tgz" 2>/dev/null | grep -E "${PACKAGE}.*[0-9]+\.[0-9]+\.[0-9]+\.tgz" | head -n 1)
+MATCHES=$(find "${TEMPLATE_DIR}" -name "*.tgz" 2>/dev/null | grep -E "${PACKAGE}.*[0-9]+\.[0-9]+\.[0-9]+\.tgz")
+TEMPLATE_PATH=$(echo "${MATCHES}" | awk '{ print length, $0 }' | sort -nr | cut -d" " -f2- | head -n 1)
 
 if [ -z "${TEMPLATE_PATH}" ]; then
     echo "${PACKAGE} path not found in ${TEMPLATE_DIR}!"

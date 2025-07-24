@@ -78,7 +78,7 @@ export async function ValidateInputs(): Promise<UnityCommand> {
     }
     core.info(`Args:`);
     for (const arg of args) {
-        core.info(`  > ${arg}`);
+        core.info(` ${arg}`);
     }
     return { editorPath, args };
 }
