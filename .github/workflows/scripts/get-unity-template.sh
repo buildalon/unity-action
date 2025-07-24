@@ -15,11 +15,14 @@ if [ -z "$PACKAGE" ]; then
     exit 1
 fi
 
-# UNITY_EDITOR_PATH: /home/runner/Unity/Hub/Editor/<version>/Editor/Unity
-# TEMPLATE_PATH=/home/runner/Unity/Hub/Editor/<version>/Editor/Data/Resources/PackageManager/ProjectTemplates/com.unity.template.3d-<version>.tgz
-# Derive the editor root (strip trailing /Unity or /Unity.exe)
 EDITOR_ROOT=$(dirname "${UNITY_EDITOR_PATH}")
+EDITOR_ROOT=${EDITOR_ROOT//\\//\/}
 TEMPLATE_DIR="${EDITOR_ROOT}/Data/Resources/PackageManager/ProjectTemplates"
+OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+if [[ "${OS_NAME}" == "darwin" ]]; then
+    TEMPLATE_DIR="${EDITOR_ROOT}/Contents/Resources/PackageManager/ProjectTemplates"
+fi
 
 if [ ! -d "${TEMPLATE_DIR}" ]; then
     echo "Template directory not found: ${TEMPLATE_DIR}"
