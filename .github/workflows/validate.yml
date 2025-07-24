@@ -27,7 +27,7 @@ jobs:
   validate:
     if: ${{ needs.setup.outputs.jobs }}
     needs: setup
-    name: ${{ matrix.jobs.name }}
+    name: build ${{ matrix.jobs.name }}
     permissions:
       contents: read
     strategy:
