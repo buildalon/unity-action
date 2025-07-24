@@ -56,7 +56,7 @@ jobs:
           build-target: ${{ matrix.build-target }}
           project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: ${{ matrix.build-target }}-Validate
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
       - uses:  ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
