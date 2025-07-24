@@ -7,28 +7,56 @@ export function shellSplit(input: string | undefined): string[] {
   let escape = false;
   for (let i = 0; i < input.length; i++) {
     const c = input[i];
-    if (escape) {
-      current += c;
-      escape = false;
-    } else if (c === '\\') {
-      escape = true;
-    } else if (inSingle) {
-      if (c === "'") inSingle = false;
-      else current += c;
+    if (inSingle) {
+      if (escape) {
+        current += c;
+        escape = false;
+      } else if (c === '\\') {
+        // Only escape if next char is a single quote or backslash
+        const next = input[i + 1];
+        if (next === "'" || next === '\\') {
+          escape = true;
+          continue;
+        } else {
+          current += c;
+        }
+      } else if (c === "'") {
+        inSingle = false;
+      } else {
+        current += c;
+      }
     } else if (inDouble) {
-      if (c === '"') inDouble = false;
-      else current += c;
-    } else if (c === "'") {
-      inSingle = true;
-    } else if (c === '"') {
-      inDouble = true;
-    } else if (/\s/.test(c)) {
-      if (current.length > 0) {
-        result.push(current);
-        current = '';
+      if (escape) {
+        current += c;
+        escape = false;
+      } else if (c === '\\') {
+        // Only escape if next char is a double quote or backslash
+        const next = input[i + 1];
+        if (next === '"' || next === '\\') {
+          escape = true;
+          continue;
+        } else {
+          current += c;
+        }
+      } else if (c === '"') {
+        inDouble = false;
+      } else {
+        current += c;
       }
     } else {
-      current += c;
+      if (c === "'") {
+        inSingle = true;
+      } else if (c === '"') {
+        inDouble = true;
+      } else if (/\s/.test(c)) {
+        if (current.length > 0) {
+          result.push(current);
+          current = '';
+        }
+      } else {
+        // Only treat backslash as escape inside quotes; outside, preserve it
+        current += c;
+      }
     }
   }
   if (current.length > 0) result.push(current);
