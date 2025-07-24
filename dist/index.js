@@ -25726,7 +25726,7 @@ async function ValidateInputs() {
         args.push(...inputArgs);
     }
     core.debug(`Args:`);
-    inputArgs.forEach(arg => core.debug(`  ${arg}`));
+    args.forEach(arg => core.debug(`  ${arg}`));
     return { editorPath, args };
 }
 
@@ -25771,10 +25771,10 @@ async function ExecUnity(command) {
     finally {
         if (!isCancelled) {
             const killedPid = await (0, utils_1.tryKillPid)(pidFile);
-            if (killedPid && killedPid !== unityProcInfo.pid) {
-                core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
-            }
             if (unityProcInfo) {
+                if (killedPid && killedPid !== unityProcInfo.pid) {
+                    core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo.pid}`);
+                }
                 await (0, utils_1.cleanupProcessOrphans)(unityProcInfo);
             }
             if (exitCode !== 0) {
@@ -26018,13 +26018,13 @@ async function listProcesses() {
             for (const line of lines.slice(1)) {
                 const parts = line.split(',');
                 core.debug(line);
-                if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-                    const procName = parts[3] || parts[2];
+                if (parts.length >= 3 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+                    const procName = parts[2];
                     if (filterSystem(procName)) {
                         procs.push({
                             name: procName,
-                            pid: Number(parts[1]),
-                            ppid: Number(parts[2])
+                            pid: Number(parts[0]),
+                            ppid: Number(parts[1])
                         });
                     }
                 }
@@ -26102,7 +26102,9 @@ async function tryKillPid(pidFilePath) {
             process.kill(pid);
         }
         catch (error) {
-            if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
+            const nodeJsException = error;
+            const errorCode = nodeJsException === null || nodeJsException === void 0 ? void 0 : nodeJsException.code;
+            if (errorCode !== 'ENOENT' && errorCode !== 'ESRCH') {
                 core.error(`Failed to kill process:\n${JSON.stringify(error)}`);
             }
         }

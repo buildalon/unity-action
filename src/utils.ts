@@ -136,13 +136,13 @@ export async function listProcesses(): Promise<ProcInfo[]> {
       for (const line of lines.slice(1)) {
         const parts = line.split(',');
         core.debug(line);
-        if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-          const procName = parts[3] || parts[2];
+        if (parts.length >= 3 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+          const procName = parts[2];
           if (filterSystem(procName)) {
             procs.push({
               name: procName,
-              pid: Number(parts[1]),
-              ppid: Number(parts[2])
+              pid: Number(parts[0]),
+              ppid: Number(parts[1])
             });
           }
         }
@@ -223,7 +223,9 @@ export async function tryKillPid(pidFilePath: string): Promise<number | null> {
       core.debug(`Killing process pid: ${pid}`);
       process.kill(pid);
     } catch (error) {
-      if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
+      const nodeJsException = error as NodeJS.ErrnoException;
+      const errorCode = nodeJsException?.code;
+      if (errorCode !== 'ENOENT' && errorCode !== 'ESRCH') {
         core.error(`Failed to kill process:\n${JSON.stringify(error)}`);
       }
     } finally {

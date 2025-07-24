@@ -77,6 +77,6 @@ export async function ValidateInputs(): Promise<UnityCommand> {
         args.push(...inputArgs);
     }
     core.debug(`Args:`);
-    inputArgs.forEach(arg => core.debug(`  ${arg}`));
+    args.forEach(arg => core.debug(`  ${arg}`));
     return { editorPath, args };
 }

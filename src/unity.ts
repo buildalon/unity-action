@@ -40,10 +40,10 @@ export async function ExecUnity(command: UnityCommand): Promise<void> {
     } finally {
         if (!isCancelled) {
             const killedPid = await tryKillPid(pidFile);
-            if (killedPid && killedPid !== unityProcInfo.pid) {
-                core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
-            }
             if (unityProcInfo) {
+                if (killedPid && killedPid !== unityProcInfo.pid) {
+                    core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo.pid}`);
+                }
                 await cleanupProcessOrphans(unityProcInfo);
             }
             if (exitCode !== 0) {
