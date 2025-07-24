@@ -27,8 +27,6 @@ export async function ExecUnity(command: UnityCommand): Promise<void> {
         await tryKillPid(pidFile);
         isCancelled = true;
     });
-    const beforeProcs = await listProcesses();
-    const beforePids = new Set(beforeProcs.map(p => p.pid));
     let exitCode: number;
     let unityProcInfo: ProcInfo | null = null;
     try {
@@ -46,7 +44,7 @@ export async function ExecUnity(command: UnityCommand): Promise<void> {
                 core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
             }
             if (unityProcInfo) {
-                await cleanupProcessOrphans(unityProcInfo, beforePids);
+                await cleanupProcessOrphans(unityProcInfo);
             }
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);

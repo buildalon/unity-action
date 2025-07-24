@@ -25756,8 +25756,6 @@ async function ExecUnity(command) {
         await (0, utils_1.tryKillPid)(pidFile);
         isCancelled = true;
     });
-    const beforeProcs = await (0, utils_1.listProcesses)();
-    const beforePids = new Set(beforeProcs.map(p => p.pid));
     let exitCode;
     let unityProcInfo = null;
     try {
@@ -25777,7 +25775,7 @@ async function ExecUnity(command) {
                 core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
             }
             if (unityProcInfo) {
-                await (0, utils_1.cleanupProcessOrphans)(unityProcInfo, beforePids);
+                await (0, utils_1.cleanupProcessOrphans)(unityProcInfo);
             }
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);
@@ -26061,34 +26059,28 @@ async function listProcesses() {
         return [];
     }
 }
-async function cleanupProcessOrphans(parentProcess, beforePids) {
+async function cleanupProcessOrphans(parentProcess) {
     const procs = await listProcesses();
     if (procs.length === 0) {
         core.debug('No processes found to clean up.');
         return;
     }
-    core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+    core.startGroup('Cleaning up orphaned processes:');
     try {
         for (const proc of procs) {
-            if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-                continue;
-            }
             if (proc.ppid === parentProcess.pid) {
                 try {
                     process.kill(proc.pid);
-                    core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+                    core.info(`  {name: ${proc.name}, pid: ${proc.pid}}`);
                 }
                 catch (error) {
                     if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
-                        core.debug(`Orphaned process {name: ${proc.name}, pid: ${proc.pid}} already exited.`);
+                        core.debug(`  {name: ${proc.name}, pid: ${proc.pid}} already exited.`);
                     }
                     else {
                         core.error(`Failed to kill orphaned process {name: ${proc.name}, pid: ${proc.pid}}:\n\t${error}`);
                     }
                 }
-            }
-            else if (!beforePids.has(proc.pid)) {
-                core.debug(`Detected new process not parented by unity: {name: ${proc.name}, pid: ${proc.pid}, ppid: ${proc.ppid}}`);
             }
         }
     }
@@ -26106,7 +26098,7 @@ async function tryKillPid(pidFilePath) {
         const fileHandle = await fs.promises.open(pidFilePath, 'r');
         try {
             pid = parseInt(await fileHandle.readFile('utf8'));
-            core.info(`Killing process pid: ${pid}`);
+            core.debug(`Killing process pid: ${pid}`);
             process.kill(pid);
         }
         catch (error) {

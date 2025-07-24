@@ -178,35 +178,27 @@ export async function listProcesses(): Promise<ProcInfo[]> {
 /**
  * Cleanup orphaned processes that were spawned by a specific parent process.
  * @param parentProcess The parent process information.
- * @param beforePids The set of PIDs that were present before the parent process started.
  */
-export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids: Set<number>) {
+export async function cleanupProcessOrphans(parentProcess: ProcInfo) {
   const procs = await listProcesses();
   if (procs.length === 0) {
     core.debug('No processes found to clean up.');
     return;
   }
-  core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+  core.startGroup('Cleaning up orphaned processes:');
   try {
     for (const proc of procs) {
-      // Skip system processes
-      if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-        continue;
-      }
       if (proc.ppid === parentProcess.pid) {
-        // Only kill processes whose parent matches the ppid
         try {
           process.kill(proc.pid);
-          core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+          core.info(`  {name: ${proc.name}, pid: ${proc.pid}}`);
         } catch (error) {
           if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
-            core.debug(`Orphaned process {name: ${proc.name}, pid: ${proc.pid}} already exited.`);
+            core.debug(`  {name: ${proc.name}, pid: ${proc.pid}} already exited.`);
           } else {
             core.error(`Failed to kill orphaned process {name: ${proc.name}, pid: ${proc.pid}}:\n\t${error}`);
           }
         }
-      } else if (!beforePids.has(proc.pid)) {
-        core.debug(`Detected new process not parented by unity: {name: ${proc.name}, pid: ${proc.pid}, ppid: ${proc.ppid}}`);
       }
     }
   } finally {
@@ -228,7 +220,7 @@ export async function tryKillPid(pidFilePath: string): Promise<number | null> {
     const fileHandle = await fs.promises.open(pidFilePath, 'r');
     try {
       pid = parseInt(await fileHandle.readFile('utf8'));
-      core.info(`Killing process pid: ${pid}`);
+      core.debug(`Killing process pid: ${pid}`);
       process.kill(pid);
     } catch (error) {
       if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
