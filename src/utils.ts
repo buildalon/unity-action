@@ -186,27 +186,31 @@ export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids:
     core.debug('No processes found to clean up.');
     return;
   }
-  core.info(`Found ${procs.length} processes after ${parentProcess.name} started.`);
-  for (const proc of procs) {
-    // Skip system processes
-    if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-      continue;
-    }
-    if (proc.ppid === parentProcess.pid) {
-      // Only kill processes whose parent matches the ppid
-      try {
-        process.kill(proc.pid);
-        core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
-          core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
-        } else {
-          core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
-        }
+  core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+  try {
+    for (const proc of procs) {
+      // Skip system processes
+      if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+        continue;
       }
-    } else if (!beforePids.has(proc.pid)) {
-      core.debug(`Detected new process not parented by ${parentProcess.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+      if (proc.ppid === parentProcess.pid) {
+        // Only kill processes whose parent matches the ppid
+        try {
+          process.kill(proc.pid);
+          core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
+            core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+          } else {
+            core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+          }
+        }
+      } else if (!beforePids.has(proc.pid)) {
+        core.debug(`Detected new process not parented by unity: ${proc.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+      }
     }
+  } finally {
+    core.endGroup();
   }
 }
 /**

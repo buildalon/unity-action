@@ -26067,28 +26067,33 @@ async function cleanupProcessOrphans(parentProcess, beforePids) {
         core.debug('No processes found to clean up.');
         return;
     }
-    core.info(`Found ${procs.length} processes after ${parentProcess.name} started.`);
-    for (const proc of procs) {
-        if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-            continue;
-        }
-        if (proc.ppid === parentProcess.pid) {
-            try {
-                process.kill(proc.pid);
-                core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+    core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+    try {
+        for (const proc of procs) {
+            if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+                continue;
             }
-            catch (error) {
-                if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
-                    core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+            if (proc.ppid === parentProcess.pid) {
+                try {
+                    process.kill(proc.pid);
+                    core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
                 }
-                else {
-                    core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+                catch (error) {
+                    if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
+                        core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+                    }
+                    else {
+                        core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+                    }
                 }
             }
+            else if (!beforePids.has(proc.pid)) {
+                core.debug(`Detected new process not parented by unity: ${proc.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+            }
         }
-        else if (!beforePids.has(proc.pid)) {
-            core.debug(`Detected new process not parented by ${parentProcess.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
-        }
+    }
+    finally {
+        core.endGroup();
     }
 }
 async function tryKillPid(pidFilePath) {
