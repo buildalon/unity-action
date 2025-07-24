@@ -25811,6 +25811,9 @@ async function execUnity(editorPath, args, onPid) {
     const logPath = getLogFilePath(args);
     const unityProcess = (0, child_process_1.spawn)(editorPath, args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
     const processId = unityProcess.pid;
+    if (processId === undefined) {
+        throw new Error('Failed to start Unity process');
+    }
     onPid(processId);
     core.debug(`Unity process started with pid: ${processId}`);
     fs.writeFileSync(pidFile, String(processId));
@@ -25959,9 +25962,8 @@ async function listProcesses() {
     }
 }
 async function cleanupUnityOrphans(unityPid, beforePids) {
-    var _a;
     const procs = await listProcesses();
-    core.info(`::group::Found ${procs.length} processes after Unity started.`);
+    core.startGroup(`Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
         if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
             continue;
@@ -25972,7 +25974,7 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
             }
             catch (error) {
-                if (error && (error.code === 'ESRCH' || ((_a = error.message) === null || _a === void 0 ? void 0 : _a.includes('ESRCH')))) {
+                if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
                     core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
                 }
                 else {
@@ -25984,7 +25986,7 @@ async function cleanupUnityOrphans(unityPid, beforePids) {
             core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
         }
     }
-    core.info(`::endgroup::`);
+    core.endGroup();
 }
 
 

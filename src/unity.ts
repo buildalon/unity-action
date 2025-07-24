@@ -72,6 +72,9 @@ async function execUnity(editorPath: string, args: string[], onPid: (pid: number
     const logPath = getLogFilePath(args);
     const unityProcess = spawn(editorPath, args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
     const processId = unityProcess.pid;
+    if (processId === undefined) {
+        throw new Error('Failed to start Unity process');
+    }
     onPid(processId);
     core.debug(`Unity process started with pid: ${processId}`);
     fs.writeFileSync(pidFile, String(processId));
@@ -235,7 +238,7 @@ async function listProcesses(): Promise<ProcInfo[]> {
 
 async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
     const procs = await listProcesses();
-    core.info(`::group::Found ${procs.length} processes after Unity started.`);
+    core.startGroup(`Found ${procs.length} processes after Unity started.`);
     for (const proc of procs) {
         // Skip system processes
         if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
@@ -247,7 +250,7 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
                 process.kill(proc.pid);
                 core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
             } catch (error) {
-                if (error && (error.code === 'ESRCH' || error.message?.includes('ESRCH'))) {
+                if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
                     core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
                 } else {
                     core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
@@ -258,5 +261,5 @@ async function cleanupUnityOrphans(unityPid: number, beforePids: Set<number>) {
             core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
         }
     }
-    core.info(`::endgroup::`);
+    core.endGroup();
 }
