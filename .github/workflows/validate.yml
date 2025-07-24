@@ -15,9 +15,8 @@ jobs:
   build:
     timeout-minutes: 60
     env:
-      TEMPLATE_PATH: ''
       UNITY_EDITOR_PATH: '' # set from unity-setup step
-      UNITY_PROJECT_PATH: '' # set from unity-setup step
+      UNITY_PROJECT_PATH: ${{ github.workspace }}/Test Project
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -45,11 +44,12 @@ jobs:
       - name: Find Unity Template Path
         id: get-template
         run: |
-          EDITOR_ROOT_PATH="${UNITY_EDITOR_PATH/Editor*/}" # Remove the Editor part to get the root path to the Unity installation
-          path=$(find "${EDITOR_ROOT_PATH}" -type f -name "com.unity.template.3d*.tgz" | head -n 1)
-          echo "path=$path"
-          echo "path=$path" >> "$GITHUB_OUTPUT"
-        shell: bash
+          $rootPath = $env:UNITY_EDITOR_PATH -replace "Editor.*", ""
+          Write-Host "ROOT_PATH=$rootPath"
+          $templatePath = Get-ChildItem -Recurse -Filter "com.unity.template.3d*.tgz" -Path $rootPath | Select-Object -First 1 | Select-Object -ExpandProperty FullName
+          Write-Host "TEMPLATE_PATH=$templatePath"
+          echo "TEMPLATE_PATH=$templatePath" >> $env:GITHUB_OUTPUT
+        shell: pwsh
         # Activates the installation with the provided credentials
       - uses: buildalon/activate-unity-license@v1
         with:
@@ -60,14 +60,14 @@ jobs:
         name: Create Test Project
         with:
           log-name: 'create-test-project'
-          args: '-quit -nographics -batchmode -createProject "${{ github.workspace }}/Test Project" -cloneFromTemplate "${{ steps.get-template.outputs.path }}"'
+          args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ steps.get-template.outputs.TEMPLATE_PATH }}"'
       - run: 'openupm add com.utilities.buildpipeline'
         name: Add Build Pipeline Package
-        working-directory: ${{ github.workspace }}/Test Project
+        working-directory: ${{ env.UNITY_PROJECT_PATH }}
       - uses:  ./ # buildalon/unity-action
         name: '${{ matrix.build-target }}-Build'
         with:
-          project-path: ${{ github.workspace }}/Test Project
+          project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: '${{ matrix.build-target }}-Build'
           build-target: '${{ matrix.build-target }}'
           args: '-quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
