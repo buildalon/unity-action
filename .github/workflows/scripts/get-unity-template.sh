@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script is used to fetch the Unity template from the editor path in env variables.
-set -e
+set -xe
 
 if [ -z "$UNITY_EDITOR_PATH" ]; then
   echo "UNITY_EDITOR_PATH is not set. Please set it to the path of your Unity editor."
@@ -35,18 +35,21 @@ if [ -z "${PACKAGES}" ]; then
     echo "No templates found in ${TEMPLATE_DIR}"
 else
     echo "Available templates:"
-    for pkg in ${PACKAGES}; do
-        echo " - $(basename "${pkg}")"
+    echo "${PACKAGES}" | while IFS= read -r pkg; do
+        echo " - $(basename \""${pkg}"\")"
     done
 fi
 
-TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "${PACKAGE}-*.tgz" | head -n 1)
+# since our find is for regex and the package name contains dots, we need to escape them
+TEMPLATE_PATHS=$(find "${TEMPLATE_DIR}" -name "${PACKAGE//./\\.}-.*\d+.\d+.\d+.tgz" | head -n 1)
 
-if [ -z "${TEMPLATE_PATH}" ]; then
+if [ -z "${TEMPLATE_PATHS}" ]; then
     echo "${PACKAGE} path not found in ${TEMPLATE_DIR}!"
     exit 1
 fi
 
+# if there are multiple matches, we take the last one
+TEMPLATE_PATH=$(echo "${TEMPLATE_PATHS}" | tail -n 1)
 TEMPLATE_PATH=${TEMPLATE_PATH//\\//\/}
 
 echo "TEMPLATE_PATH=${TEMPLATE_PATH}"
