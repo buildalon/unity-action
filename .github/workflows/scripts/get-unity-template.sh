@@ -10,8 +10,10 @@ fi
 PACKAGE="$1"
 
 if [ -z "$PACKAGE" ]; then
-    echo "Usage: $0 <package-name>"
+    echo "Usage: $0 <package-name-or-regex>"
     echo "Example: $0 com.unity.template.3d"
+    echo "         $0 'com.unity.template.3d-cross-platform'"
+    echo "         $0 'com.unity.template.*' (regex supported)"
     exit 1
 fi
 
@@ -40,16 +42,15 @@ else
     done
 fi
 
-# since our find is for regex and the package name contains dots, we need to escape them
-TEMPLATE_PATHS=$(find "${TEMPLATE_DIR}" -name "${PACKAGE//./\\.}-.*\d+.\d+.\d+.tgz" | head -n 1)
 
-if [ -z "${TEMPLATE_PATHS}" ]; then
+# Use find to list all .tgz files, then grep for regex match
+TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "*.tgz" 2>/dev/null | grep -E "${PACKAGE}.*[0-9]+\.[0-9]+\.[0-9]+\.tgz" | tail -n 1)
+
+if [ -z "${TEMPLATE_PATH}" ]; then
     echo "${PACKAGE} path not found in ${TEMPLATE_DIR}!"
     exit 1
 fi
 
-# if there are multiple matches, we take the last one
-TEMPLATE_PATH=$(echo "${TEMPLATE_PATHS}" | tail -n 1)
 TEMPLATE_PATH=${TEMPLATE_PATH//\\//\/}
 
 echo "TEMPLATE_PATH=${TEMPLATE_PATH}"
