@@ -1,0 +1,74 @@
+name: build
+permissions:
+  contents: read
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        required: true
+        type: string
+    secrets:
+      UNITY_USERNAME:
+        required: true
+      UNITY_PASSWORD:
+        required: true
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(inputs.matrix) }}
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    env:
+      BUILD_OUTPUT_PATH: ${{ github.workspace }}/Builds/${{ matrix.build-target }}
+      TEMPLATE_PATH: ''
+      UNITY_PROJECT_PATH: ${{ github.workspace }}/Test Project
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'npm install -g openupm-cli'
+      - uses: buildalon/unity-setup@v1
+        with:
+          version-file: 'None'
+          build-targets: ${{ matrix.build-target }}
+          unity-version: ${{ matrix.unity-version }}
+      - name: Get Unity Template
+        id: template
+        shell: bash
+        run: ./.github/workflows/scripts/get-unity-template.sh com.unity.template.3d
+      - uses: buildalon/activate-unity-license@v1
+        with:
+          license: 'Personal'
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+      - uses: ./ # buildalon/unity-actions
+        name: Create Test Project
+        with:
+          log-name: 'create-test-project'
+          args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ steps.template.outputs.TEMPLATE_PATH }}"'
+      - name: Add Build Pipeline Package
+        run: 'openupm add com.virtualmaker.buildalon'
+        working-directory: ${{ env.UNITY_PROJECT_PATH }}
+      - uses: ./ # buildalon/unity-actions
+        name: '${{ matrix.build-target }}-Validate'
+        with:
+          build-target: ${{ matrix.build-target }}
+          project-path: ${{ env.UNITY_PROJECT_PATH }}
+          log-name: '${{ matrix.build-target }}-Validate'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
+      - uses:  ./ # buildalon/unity-action
+        name: '${{ matrix.build-target }}-Build'
+        with:
+          build-target: '${{ matrix.build-target }}'
+          project-path: ${{ env.UNITY_PROJECT_PATH }}
+          log-name: '${{ matrix.build-target }}-Build'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
+      - uses: actions/upload-artifact@v4
+        name: Upload Artifacts
+        if: always()
+        with:
+          name: '${{ github.run_number }}.${{ github.run_attempt }}-${{ runner.os }}-${{ matrix.build-target }}-${{ matrix.unity-version }}-Artifacts'
+          path: |
+            ${{ github.workspace }}/**/*.log
+            ${{ github.workspace }}/**/Builds/${{ matrix.build-target }}/
