@@ -200,13 +200,13 @@ export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids:
           core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
         } catch (error) {
           if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
-            core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+            core.debug(`Orphaned process {name: ${proc.name}, pid: ${proc.pid}} already exited.`);
           } else {
-            core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+            core.error(`Failed to kill orphaned process {name: ${proc.name}, pid: ${proc.pid}}:\n\t${error}`);
           }
         }
       } else if (!beforePids.has(proc.pid)) {
-        core.debug(`Detected new process not parented by unity: ${proc.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+        core.debug(`Detected new process not parented by unity: {name: ${proc.name}, pid: ${proc.pid}, ppid: ${proc.ppid}}`);
       }
     }
   } finally {
