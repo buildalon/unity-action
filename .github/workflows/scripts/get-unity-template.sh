@@ -47,5 +47,7 @@ if [ -z "${TEMPLATE_PATH}" ]; then
     exit 1
 fi
 
+TEMPLATE_PATH=${TEMPLATE_PATH//\\//\/}
+
 echo "TEMPLATE_PATH=${TEMPLATE_PATH}"
 echo "TEMPLATE_PATH=${TEMPLATE_PATH}" >> "${GITHUB_OUTPUT}"
