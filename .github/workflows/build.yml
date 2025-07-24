@@ -61,17 +61,17 @@ jobs:
         shell: bash
         run: |
           # list all .unity files in Assets
-          scenes=$(find "${{ env.UNITY_PROJECT_PATH }}/Assets" -name "*.unity")
-          if [ -n "$scenes" ]; then
+          project_root="${{ env.UNITY_PROJECT_PATH }}"
+          scenes=$(find "${project_root}/Assets" -name "*.unity")
+          if [ -n "${scenes}" ]; then
             echo "Found the following .unity files:"
-            for scene in $scenes; do
-              echo " - $scene"
+            for scene in ${scenes}; do
+              echo " - ${scene}"
             done
           fi
 
-          if [ ! -f "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity" ]; then
-            echo "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity not found in Assets/Scenes"
-
+          if [ ! -f "${project_root}/Assets/Scenes/SampleScene.unity" ]; then
+            echo "${project_root}/Assets/Scenes/SampleScene.unity not found!"
             exit 1
           fi
       - uses:  ./ # buildalon/unity-action
