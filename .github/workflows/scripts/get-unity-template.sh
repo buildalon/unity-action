@@ -21,7 +21,7 @@ TEMPLATE_DIR="${EDITOR_ROOT}/Data/Resources/PackageManager/ProjectTemplates"
 OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 if [[ "${OS_NAME}" == "darwin" ]]; then
-    TEMPLATE_DIR="${EDITOR_ROOT}/Unity.app/Contents/Resources/PackageManager/ProjectTemplates"
+    TEMPLATE_DIR=$(dirname "${EDITOR_ROOT}")/Resources/PackageManager/ProjectTemplates
 fi
 
 if [ ! -d "${TEMPLATE_DIR}" ]; then
