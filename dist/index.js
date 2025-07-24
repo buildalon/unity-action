@@ -25802,10 +25802,25 @@ async function exec(command, onPid) {
     if (process.platform === 'linux') {
         const io = __nccwpck_require__(7436);
         const xvfbRun = await io.which('xvfb-run', true);
-        unityProcess = (0, child_process_1.spawn)(xvfbRun, [command.editorPath, ...command.args], { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+        unityProcess = (0, child_process_1.spawn)(xvfbRun, [command.editorPath, ...command.args], {
+            stdio: ['ignore', 'ignore', 'ignore'],
+            detached: true,
+            env: {
+                ...process.env,
+                DISPLAY: ':99',
+                UNITY_THISISABUILDMACHINE: '1'
+            }
+        });
     }
     else {
-        unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+        unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, {
+            stdio: ['ignore', 'ignore', 'ignore'],
+            detached: true,
+            env: {
+                ...process.env,
+                UNITY_THISISABUILDMACHINE: '1'
+            }
+        });
     }
     const processId = unityProcess.pid;
     if (!processId) {
@@ -25852,6 +25867,7 @@ async function exec(command, onPid) {
             }
             await new Promise(res => setTimeout(res, logPollingInterval));
         }
+        process.stdout.write('\n');
     };
     const timeout = 10000;
     const tailPromise = tailLog();

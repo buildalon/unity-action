@@ -63,9 +63,30 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     if (process.platform === 'linux') {
         const io = require('@actions/io');
         const xvfbRun = await io.which('xvfb-run', true);
-        unityProcess = spawn(xvfbRun, [command.editorPath, ...command.args], { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+        unityProcess = spawn(
+            xvfbRun,
+            [command.editorPath, ...command.args],
+            {
+                stdio: ['ignore', 'ignore', 'ignore'],
+                detached: true,
+                env: {
+                    ...process.env,
+                    DISPLAY: ':99',
+                    UNITY_THISISABUILDMACHINE: '1'
+                }
+            });
     } else {
-        unityProcess = spawn(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+        unityProcess = spawn(
+            command.editorPath,
+            command.args,
+            {
+                stdio: ['ignore', 'ignore', 'ignore'],
+                detached: true,
+                env: {
+                    ...process.env,
+                    UNITY_THISISABUILDMACHINE: '1'
+                }
+            });
     }
     const processId = unityProcess.pid;
     if (!processId) {
@@ -115,6 +136,9 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
             }
             await new Promise(res => setTimeout(res, logPollingInterval));
         }
+        // Write a newline at the end of the log tail
+        // prevents appending logs from being printed on the same line
+        process.stdout.write('\n');
     };
     const timeout = 10000; // 10 seconds
     // Start log tailing in background
