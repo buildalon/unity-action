@@ -14,7 +14,7 @@ export async function ValidateInputs(): Promise<UnityCommand> {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
     await fs.promises.access(editorPath, fs.constants.X_OK);
-    core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
+    core.info(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
     const inputArgs = shellSplit(inputArgsString);
@@ -30,7 +30,7 @@ export async function ValidateInputs(): Promise<UnityCommand> {
     if (!inputArgs.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
         if (buildTarget) {
-            core.debug(`Build Target:\n  > ${buildTarget}`);
+            core.info(`Build Target:\n  > ${buildTarget}`);
             args.push(`-buildTarget`, buildTarget);
         }
     }
@@ -51,7 +51,7 @@ export async function ValidateInputs(): Promise<UnityCommand> {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
         await fs.promises.access(projectPath, fs.constants.R_OK);
-        core.debug(`Unity Project Path:\n  > "${projectPath}"`);
+        core.info(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
     if (!inputArgs.includes(`-logFile`)) {
@@ -61,13 +61,13 @@ export async function ValidateInputs(): Promise<UnityCommand> {
         try {
             await fs.promises.access(logsDirectory, fs.constants.R_OK);
         } catch (error) {
-            core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
+            core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
             await fs.promises.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
-        core.debug(`Log File Path:\n  > "${logPath}"`);
+        core.info(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
     }
     if (!inputArgs.includes(`-automated`)) {
@@ -76,9 +76,9 @@ export async function ValidateInputs(): Promise<UnityCommand> {
     if (inputArgs) {
         args.push(...inputArgs);
     }
-    core.debug(`Args:`);
+    core.info(`Args:`);
     for (const arg of args) {
-        core.debug(`  > ${arg}`);
+        core.info(`  > ${arg}`);
     }
     return { editorPath, args };
 }

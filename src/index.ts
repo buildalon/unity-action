@@ -1,6 +1,6 @@
+import core = require('@actions/core');
 import { ValidateInputs } from './inputs';
 import { ExecUnity } from './unity';
-import core = require('@actions/core');
 import { UnityCommand } from './types';
 
 const main = async () => {

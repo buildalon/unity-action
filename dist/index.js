@@ -25663,7 +25663,7 @@ async function ValidateInputs() {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
     }
     await fs.promises.access(editorPath, fs.constants.X_OK);
-    core.debug(`Unity Editor Path:\n  > "${editorPath}"`);
+    core.info(`Unity Editor Path:\n  > "${editorPath}"`);
     const args = [];
     const inputArgsString = core.getInput(`args`);
     const inputArgs = (0, utils_1.shellSplit)(inputArgsString);
@@ -25679,7 +25679,7 @@ async function ValidateInputs() {
     if (!inputArgs.includes(`-buildTarget`)) {
         const buildTarget = core.getInput(`build-target`);
         if (buildTarget) {
-            core.debug(`Build Target:\n  > ${buildTarget}`);
+            core.info(`Build Target:\n  > ${buildTarget}`);
             args.push(`-buildTarget`, buildTarget);
         }
     }
@@ -25699,7 +25699,7 @@ async function ValidateInputs() {
             throw Error(`Missing project-path or UNITY_PROJECT_PATH`);
         }
         await fs.promises.access(projectPath, fs.constants.R_OK);
-        core.debug(`Unity Project Path:\n  > "${projectPath}"`);
+        core.info(`Unity Project Path:\n  > "${projectPath}"`);
         args.push(`-projectPath`, projectPath);
     }
     if (!inputArgs.includes(`-logFile`)) {
@@ -25710,13 +25710,13 @@ async function ValidateInputs() {
             await fs.promises.access(logsDirectory, fs.constants.R_OK);
         }
         catch (error) {
-            core.debug(`Creating Logs Directory:\n  > "${logsDirectory}"`);
+            core.info(`Creating Logs Directory:\n  > "${logsDirectory}"`);
             await fs.promises.mkdir(logsDirectory, { recursive: true });
         }
         const logName = core.getInput(`log-name`) || `Unity`;
         const timestamp = new Date().toISOString().replace(/[-:]/g, ``).replace(/\..+/, ``);
         const logPath = path.join(logsDirectory, `${logName}-${timestamp}.log`);
-        core.debug(`Log File Path:\n  > "${logPath}"`);
+        core.info(`Log File Path:\n  > "${logPath}"`);
         args.push(`-logFile`, logPath);
     }
     if (!inputArgs.includes(`-automated`)) {
@@ -25725,9 +25725,9 @@ async function ValidateInputs() {
     if (inputArgs) {
         args.push(...inputArgs);
     }
-    core.debug(`Args:`);
+    core.info(`Args:`);
     for (const arg of args) {
-        core.debug(`  > ${arg}`);
+        core.info(`  > ${arg}`);
     }
     return { editorPath, args };
 }
@@ -25746,18 +25746,16 @@ const core = __nccwpck_require__(2186);
 const path = __nccwpck_require__(1017);
 const fs = __nccwpck_require__(7147);
 const child_process_1 = __nccwpck_require__(2081);
-const util = __nccwpck_require__(3837);
 const utils_1 = __nccwpck_require__(1314);
 const pidFile = path.join(process.env.RUNNER_TEMP || process.env.USERPROFILE, '.unity', 'unity-editor-process-id.txt');
-const execAsync = util.promisify(child_process_1.exec);
 async function ExecUnity(command) {
     let isCancelled = false;
     process.once('SIGINT', async () => {
-        await tryKillPid(pidFile);
+        await (0, utils_1.tryKillPid)(pidFile);
         isCancelled = true;
     });
     process.once('SIGTERM', async () => {
-        await tryKillPid(pidFile);
+        await (0, utils_1.tryKillPid)(pidFile);
         isCancelled = true;
     });
     const beforeProcs = await (0, utils_1.listProcesses)();
@@ -25766,11 +25764,17 @@ async function ExecUnity(command) {
     let unityProcInfo = null;
     try {
         core.info(`[command]"${command.editorPath}" ${command.args.join(' ')}`);
-        exitCode = await execUnity(command, pInfo => { unityProcInfo = pInfo; });
+        exitCode = await exec(command, pInfo => { unityProcInfo = pInfo; });
+    }
+    catch (error) {
+        core.error(`Unity execution failed:\n${error}`);
+        if (!exitCode) {
+            exitCode = 1;
+        }
     }
     finally {
         if (!isCancelled) {
-            const killedPid = await tryKillPid(pidFile);
+            const killedPid = await (0, utils_1.tryKillPid)(pidFile);
             if (killedPid && killedPid !== unityProcInfo.pid) {
                 core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
             }
@@ -25783,42 +25787,15 @@ async function ExecUnity(command) {
         }
     }
 }
-async function tryKillPid(pidFile) {
-    let pid = null;
-    try {
-        if (!fs.existsSync(pidFile)) {
-            core.debug(`PID file does not exist: ${pidFile}`);
-            return null;
-        }
-        const fileHandle = await fs.promises.open(pidFile, 'r');
-        try {
-            pid = parseInt(await fileHandle.readFile('utf8'));
-            core.debug(`Attempting to kill Unity process with pid: ${pid}`);
-            process.kill(pid);
-        }
-        catch (error) {
-            if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
-                core.error(`Failed to kill Unity process:\n${JSON.stringify(error)}`);
-            }
-        }
-        finally {
-            await fileHandle.close();
-            await fs.promises.unlink(pidFile);
-        }
-    }
-    catch (error) {
-    }
-    return pid;
-}
-async function execUnity(command, onPid) {
+async function exec(command, onPid) {
     const logPath = (0, utils_1.getArgumentValue)('-logFile', command.args);
     if (!logPath) {
         throw Error('Log file path not specified in command arguments');
     }
     const unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
     const processId = unityProcess.pid;
-    if (processId === undefined) {
-        throw new Error('Failed to start Unity process');
+    if (!processId) {
+        throw new Error('Failed to start Unity process!');
     }
     onPid({ pid: processId, ppid: process.pid, name: command.editorPath });
     core.debug(`Unity process started with pid: ${processId}`);
@@ -25842,7 +25819,7 @@ async function execUnity(command, onPid) {
                     lastSize = stats.size;
                 }
             }
-            catch (err) {
+            catch (error) {
             }
             await new Promise(res => setTimeout(res, logPollingInterval));
         }
@@ -25898,9 +25875,11 @@ exports.shellSplit = shellSplit;
 exports.getArgumentValue = getArgumentValue;
 exports.listProcesses = listProcesses;
 exports.cleanupProcessOrphans = cleanupProcessOrphans;
+exports.tryKillPid = tryKillPid;
 const core = __nccwpck_require__(2186);
 const child_process_1 = __nccwpck_require__(2081);
 const util = __nccwpck_require__(3837);
+const fs = __nccwpck_require__(7147);
 const execAsync = util.promisify(child_process_1.exec);
 const systemProcessNames = [
     'System',
@@ -26021,13 +26000,13 @@ async function listProcesses() {
         };
         if (process.platform === 'win32') {
             const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-            core.debug(`${winProcessCli}:`);
+            core.info(`${winProcessCli}:`);
             const { stdout } = await execAsync(winProcessCli);
             const lines = stdout.split(/\r?\n/).filter(l => l.trim());
             const procs = [];
             for (const line of lines.slice(1)) {
                 const parts = line.split(',');
-                core.debug(line);
+                core.info(line);
                 if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
                     const procName = parts[3] || parts[2];
                     if (filterSystem(procName)) {
@@ -26043,12 +26022,12 @@ async function listProcesses() {
         }
         else {
             const unixProcessCli = 'ps -eo pid,ppid,comm';
-            core.debug(`${unixProcessCli}:`);
+            core.info(`${unixProcessCli}:`);
             const { stdout } = await execAsync(unixProcessCli);
             const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
             const procs = [];
             for (const line of lines) {
-                core.debug(line);
+                core.info(line);
                 const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
                 if (match) {
                     const procName = match[3];
@@ -26095,6 +26074,33 @@ async function cleanupProcessOrphans(parentProcess, beforePids) {
         }
     }
     core.endGroup();
+}
+async function tryKillPid(pidFilePath) {
+    let pid = null;
+    try {
+        if (!fs.existsSync(pidFilePath)) {
+            core.info(`PID file does not exist: ${pidFilePath}`);
+            return null;
+        }
+        const fileHandle = await fs.promises.open(pidFilePath, 'r');
+        try {
+            pid = parseInt(await fileHandle.readFile('utf8'));
+            core.info(`Attempting to kill process with pid: ${pid}`);
+            process.kill(pid);
+        }
+        catch (error) {
+            if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
+                core.error(`Failed to kill process:\n${JSON.stringify(error)}`);
+            }
+        }
+        finally {
+            await fileHandle.close();
+            await fs.promises.unlink(pidFilePath);
+        }
+    }
+    catch (error) {
+    }
+    return pid;
 }
 
 
@@ -28018,9 +28024,9 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __nccwpck_require__(2186);
 const inputs_1 = __nccwpck_require__(7063);
 const unity_1 = __nccwpck_require__(6938);
-const core = __nccwpck_require__(2186);
 const main = async () => {
     try {
         const command = await (0, inputs_1.ValidateInputs)();

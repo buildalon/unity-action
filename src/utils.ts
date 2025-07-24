@@ -1,7 +1,8 @@
 import core = require('@actions/core');
-import { spawn, exec } from 'child_process';
+import { exec } from 'child_process';
 import * as util from 'util';
 import { ProcInfo } from './types';
+import fs = require('fs');
 
 const execAsync = util.promisify(exec);
 const systemProcessNames = [
@@ -128,13 +129,13 @@ export async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
       // Use PowerShell Get-CimInstance for process listing
       const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-      core.debug(`${winProcessCli}:`);
+      core.info(`${winProcessCli}:`);
       const { stdout } = await execAsync(winProcessCli);
       const lines = stdout.split(/\r?\n/).filter(l => l.trim());
       const procs: ProcInfo[] = [];
       for (const line of lines.slice(1)) {
         const parts = line.split(',');
-        core.debug(line);
+        core.info(line);
         if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
           const procName = parts[3] || parts[2];
           if (filterSystem(procName)) {
@@ -149,12 +150,12 @@ export async function listProcesses(): Promise<ProcInfo[]> {
       return procs;
     } else {
       const unixProcessCli = 'ps -eo pid,ppid,comm';
-      core.debug(`${unixProcessCli}:`);
+      core.info(`${unixProcessCli}:`);
       const { stdout } = await execAsync(unixProcessCli);
       const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
       const procs: ProcInfo[] = [];
       for (const line of lines) {
-        core.debug(line);
+        core.info(line);
         const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
         if (match) {
           const procName = match[3];
@@ -205,4 +206,35 @@ export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids:
     }
   }
   core.endGroup();
+}
+/**
+ * Attempts to kill a process with the given PID read from a PID file.
+ * @param pidFilePath The path to the PID file.
+ * @returns The PID of the killed process, or null if no process was killed.
+ */
+export async function tryKillPid(pidFilePath: string): Promise<number | null> {
+  let pid: number | null = null;
+  try {
+    if (!fs.existsSync(pidFilePath)) {
+      core.info(`PID file does not exist: ${pidFilePath}`);
+      return null;
+    }
+    const fileHandle = await fs.promises.open(pidFilePath, 'r');
+    try {
+      pid = parseInt(await fileHandle.readFile('utf8'));
+      core.info(`Attempting to kill process with pid: ${pid}`);
+      process.kill(pid);
+    } catch (error) {
+      if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
+        core.error(`Failed to kill process:\n${JSON.stringify(error)}`);
+      }
+    } finally {
+      await fileHandle.close();
+      await fs.promises.unlink(pidFilePath);
+    }
+
+  } catch (error) {
+    // ignored
+  }
+  return pid;
 }
