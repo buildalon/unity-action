@@ -60,8 +60,18 @@ jobs:
       - name: Verify Sample Scene
         shell: bash
         run: |
+          # list all .unity files in Assets
+          scenes=$(find "${{ env.UNITY_PROJECT_PATH }}/Assets" -name "*.unity")
+          if [ -n "$scenes" ]; then
+            echo "Found the following .unity files:"
+            for scene in $scenes; do
+              echo " - $scene"
+            done
+          fi
+
           if [ ! -f "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity" ]; then
             echo "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity not found in Assets/Scenes"
+
             exit 1
           fi
       - uses:  ./ # buildalon/unity-action
