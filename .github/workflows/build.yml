@@ -56,14 +56,14 @@ jobs:
           build-target: ${{ matrix.build-target }}
           project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: ${{ matrix.build-target }}-Validate
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
       - uses:  ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
           build-target: ${{ matrix.build-target }}
           project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: ${{ matrix.build-target }}-Build
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()

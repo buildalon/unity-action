@@ -25668,7 +25668,7 @@ async function ValidateInputs() {
     const inputArgsString = core.getInput(`args`);
     const inputArgs = (0, utils_1.shellSplit)(inputArgsString);
     if (inputArgs.includes(`-version`)) {
-        return [editorPath, [`-version`]];
+        return { editorPath, args: [`-version`] };
     }
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
@@ -25729,7 +25729,7 @@ async function ValidateInputs() {
     for (const arg of args) {
         core.debug(`  > ${arg}`);
     }
-    return [editorPath, args];
+    return { editorPath, args };
 }
 
 
@@ -25747,10 +25747,11 @@ const path = __nccwpck_require__(1017);
 const fs = __nccwpck_require__(7147);
 const child_process_1 = __nccwpck_require__(2081);
 const util = __nccwpck_require__(3837);
+const utils_1 = __nccwpck_require__(1314);
+const pidFile = path.join(process.env.RUNNER_TEMP || process.env.USERPROFILE, '.unity', 'unity-editor-process-id.txt');
 const execAsync = util.promisify(child_process_1.exec);
-const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
-let isCancelled = false;
-async function ExecUnity(editorPath, args) {
+async function ExecUnity(command) {
+    let isCancelled = false;
     process.once('SIGINT', async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
@@ -25759,19 +25760,22 @@ async function ExecUnity(editorPath, args) {
         await tryKillPid(pidFile);
         isCancelled = true;
     });
-    core.info(`[command]"${editorPath}" ${args.join(' ')}`);
-    const beforeProcs = await listProcesses();
+    const beforeProcs = await (0, utils_1.listProcesses)();
     const beforePids = new Set(beforeProcs.map(p => p.pid));
     let exitCode;
-    let unityPid;
+    let unityProcInfo = null;
     try {
-        exitCode = await execUnity(editorPath, args, pid => { unityPid = pid; });
+        core.info(`[command]"${command.editorPath}" ${command.args.join(' ')}`);
+        exitCode = await execUnity(command, pInfo => { unityProcInfo = pInfo; });
     }
     finally {
         if (!isCancelled) {
-            await tryKillPid(pidFile);
-            if (unityPid) {
-                await cleanupUnityOrphans(unityPid, beforePids);
+            const killedPid = await tryKillPid(pidFile);
+            if (killedPid && killedPid !== unityProcInfo.pid) {
+                core.warning(`Killed process with pid ${killedPid} but expected pid ${unityProcInfo}`);
+            }
+            if (unityProcInfo) {
+                await (0, utils_1.cleanupProcessOrphans)(unityProcInfo, beforePids);
             }
             if (exitCode !== 0) {
                 throw Error(`Unity failed with exit code ${exitCode}`);
@@ -25779,20 +25783,18 @@ async function ExecUnity(editorPath, args) {
         }
     }
 }
-function getLogFilePath(args) {
-    const logFileIndex = args.indexOf('-logFile');
-    if (logFileIndex === -1) {
-        throw Error('Missing -logFile argument');
-    }
-    return args[logFileIndex + 1];
-}
 async function tryKillPid(pidFile) {
+    let pid = null;
     try {
+        if (!fs.existsSync(pidFile)) {
+            core.debug(`PID file does not exist: ${pidFile}`);
+            return null;
+        }
         const fileHandle = await fs.promises.open(pidFile, 'r');
         try {
-            const pid = await fileHandle.readFile('utf8');
+            pid = parseInt(await fileHandle.readFile('utf8'));
             core.debug(`Attempting to kill Unity process with pid: ${pid}`);
-            process.kill(parseInt(pid));
+            process.kill(pid);
         }
         catch (error) {
             if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
@@ -25806,19 +25808,24 @@ async function tryKillPid(pidFile) {
     }
     catch (error) {
     }
+    return pid;
 }
-async function execUnity(editorPath, args, onPid) {
-    const logPath = getLogFilePath(args);
-    const unityProcess = (0, child_process_1.spawn)(editorPath, args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+async function execUnity(command, onPid) {
+    const logPath = (0, utils_1.getArgumentValue)('-logFile', command.args);
+    if (!logPath) {
+        throw Error('Log file path not specified in command arguments');
+    }
+    const unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
     const processId = unityProcess.pid;
     if (processId === undefined) {
         throw new Error('Failed to start Unity process');
     }
-    onPid(processId);
+    onPid({ pid: processId, ppid: process.pid, name: command.editorPath });
     core.debug(`Unity process started with pid: ${processId}`);
     fs.writeFileSync(pidFile, String(processId));
+    const logPollingInterval = 100;
     while (!fs.existsSync(logPath)) {
-        await new Promise(res => setTimeout(res, 100));
+        await new Promise(res => setTimeout(res, logPollingInterval));
     }
     let lastSize = 0;
     let logEnded = false;
@@ -25837,7 +25844,7 @@ async function execUnity(editorPath, args, onPid) {
             }
             catch (err) {
             }
-            await new Promise(res => setTimeout(res, 250));
+            await new Promise(res => setTimeout(res, logPollingInterval));
         }
     };
     const timeout = 10000;
@@ -25872,11 +25879,29 @@ async function execUnity(editorPath, args, onPid) {
         }
         catch (_a) {
             fileLocked = true;
-            await new Promise(res => setTimeout(res, 100));
+            await new Promise(res => setTimeout(res, logPollingInterval));
         }
     }
     return exitCode;
 }
+
+
+/***/ }),
+
+/***/ 1314:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.shellSplit = shellSplit;
+exports.getArgumentValue = getArgumentValue;
+exports.listProcesses = listProcesses;
+exports.cleanupProcessOrphans = cleanupProcessOrphans;
+const core = __nccwpck_require__(2186);
+const child_process_1 = __nccwpck_require__(2081);
+const util = __nccwpck_require__(3837);
+const execAsync = util.promisify(child_process_1.exec);
 const systemProcessNames = [
     'System',
     'Idle',
@@ -25906,99 +25931,6 @@ const systemProcessNames = [
     'atd',
     'dbus-daemon'
 ];
-async function listProcesses() {
-    try {
-        const filterSystem = (name) => {
-            return !systemProcessNames.some(sysName => name && name.toLowerCase().includes(sysName.toLowerCase()));
-        };
-        if (process.platform === 'win32') {
-            const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-            core.debug(`${winProcessCli}:`);
-            const { stdout } = await execAsync(winProcessCli);
-            const lines = stdout.split(/\r?\n/).filter(l => l.trim());
-            const procs = [];
-            for (const line of lines.slice(1)) {
-                const parts = line.split(',');
-                core.debug(line);
-                if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-                    const procName = parts[3] || parts[2];
-                    if (filterSystem(procName)) {
-                        procs.push({
-                            name: procName,
-                            pid: Number(parts[1]),
-                            ppid: Number(parts[2])
-                        });
-                    }
-                }
-            }
-            return procs;
-        }
-        else {
-            const unixProcessCli = 'ps -eo pid,ppid,comm';
-            core.debug(`${unixProcessCli}:`);
-            const { stdout } = await execAsync(unixProcessCli);
-            const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
-            const procs = [];
-            for (const line of lines) {
-                core.debug(line);
-                const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
-                if (match) {
-                    const procName = match[3];
-                    if (filterSystem(procName)) {
-                        procs.push({
-                            pid: Number(match[1]),
-                            ppid: Number(match[2]),
-                            name: procName
-                        });
-                    }
-                }
-            }
-            return procs;
-        }
-    }
-    catch (error) {
-        core.error(`Failed to list processes:\n${error}`);
-        return [];
-    }
-}
-async function cleanupUnityOrphans(unityPid, beforePids) {
-    const procs = await listProcesses();
-    core.startGroup(`Found ${procs.length} processes after Unity started.`);
-    for (const proc of procs) {
-        if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-            continue;
-        }
-        if (proc.ppid === unityPid) {
-            try {
-                process.kill(proc.pid);
-                core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
-            }
-            catch (error) {
-                if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
-                    core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
-                }
-                else {
-                    core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
-                }
-            }
-        }
-        else if (!beforePids.has(proc.pid)) {
-            core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
-        }
-    }
-    core.endGroup();
-}
-
-
-/***/ }),
-
-/***/ 1314:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.shellSplit = shellSplit;
 function shellSplit(input) {
     if (!input)
         return [];
@@ -26074,6 +26006,95 @@ function shellSplit(input) {
     if (current.length > 0)
         result.push(current);
     return result;
+}
+function getArgumentValue(value, args) {
+    const index = args.indexOf(value);
+    if (index === -1 || index === args.length - 1) {
+        throw Error(`Missing ${value} argument`);
+    }
+    return args[index + 1];
+}
+async function listProcesses() {
+    try {
+        const filterSystem = (name) => {
+            return !systemProcessNames.some(sysName => name && name.toLowerCase().includes(sysName.toLowerCase()));
+        };
+        if (process.platform === 'win32') {
+            const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
+            core.debug(`${winProcessCli}:`);
+            const { stdout } = await execAsync(winProcessCli);
+            const lines = stdout.split(/\r?\n/).filter(l => l.trim());
+            const procs = [];
+            for (const line of lines.slice(1)) {
+                const parts = line.split(',');
+                core.debug(line);
+                if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
+                    const procName = parts[3] || parts[2];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            name: procName,
+                            pid: Number(parts[1]),
+                            ppid: Number(parts[2])
+                        });
+                    }
+                }
+            }
+            return procs;
+        }
+        else {
+            const unixProcessCli = 'ps -eo pid,ppid,comm';
+            core.debug(`${unixProcessCli}:`);
+            const { stdout } = await execAsync(unixProcessCli);
+            const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
+            const procs = [];
+            for (const line of lines) {
+                core.debug(line);
+                const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+                if (match) {
+                    const procName = match[3];
+                    if (filterSystem(procName)) {
+                        procs.push({
+                            pid: Number(match[1]),
+                            ppid: Number(match[2]),
+                            name: procName
+                        });
+                    }
+                }
+            }
+            return procs;
+        }
+    }
+    catch (error) {
+        core.error(`Failed to list processes:\n${error}`);
+        return [];
+    }
+}
+async function cleanupProcessOrphans(parentProcess, beforePids) {
+    const procs = await listProcesses();
+    core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+    for (const proc of procs) {
+        if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+            continue;
+        }
+        if (proc.ppid === parentProcess.pid) {
+            try {
+                process.kill(proc.pid);
+                core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+            }
+            catch (error) {
+                if ((error === null || error === void 0 ? void 0 : error.code) === 'ESRCH') {
+                    core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+                }
+                else {
+                    core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
+                }
+            }
+        }
+        else if (!beforePids.has(proc.pid)) {
+            core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
+        }
+    }
+    core.endGroup();
 }
 
 
@@ -28002,8 +28023,8 @@ const unity_1 = __nccwpck_require__(6938);
 const core = __nccwpck_require__(2186);
 const main = async () => {
     try {
-        const [editor, args] = await (0, inputs_1.ValidateInputs)();
-        await (0, unity_1.ExecUnity)(editor, args);
+        const command = await (0, inputs_1.ValidateInputs)();
+        await (0, unity_1.ExecUnity)(command);
     }
     catch (error) {
         core.setFailed(error.message);

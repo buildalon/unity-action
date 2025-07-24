@@ -1,3 +1,44 @@
+import core = require('@actions/core');
+import { spawn, exec } from 'child_process';
+import * as util from 'util';
+import { ProcInfo } from './types';
+
+const execAsync = util.promisify(exec);
+const systemProcessNames = [
+  'System',
+  'Idle',
+  'Spotlight',
+  'svchost.exe',
+  'explorer.exe',
+  'services.exe',
+  'wininit.exe',
+  'winlogon.exe',
+  'lsass.exe',
+  'csrss.exe',
+  'smss.exe',
+  'init',
+  'kthreadd',
+  'kworker',
+  'systemd',
+  'launchd',
+  'kernel_task',
+  'Finder',
+  'Dock',
+  'WindowServer',
+  'logd',
+  'securityd',
+  'notifyd',
+  'unattended-upgrades',
+  'cron',
+  'atd',
+  'dbus-daemon'
+];
+
+/**
+ * Split a string into an array of arguments, respecting quotes and escapes.
+ * @param input The input string to split.
+ * @returns An array of arguments.
+ */
 export function shellSplit(input: string | undefined): string[] {
   if (!input) return [];
   const result: string[] = [];
@@ -61,4 +102,107 @@ export function shellSplit(input: string | undefined): string[] {
   }
   if (current.length > 0) result.push(current);
   return result;
+}
+/**
+ * Get the value of a command line argument.
+ * @param value The name of the argument to retrieve.
+ * @param args The list of command line arguments.
+ * @returns The value of the argument or an error if not found.
+ */
+export function getArgumentValue(value: string, args: string[]): string {
+  const index = args.indexOf(value);
+  if (index === -1 || index === args.length - 1) {
+    throw Error(`Missing ${value} argument`);
+  }
+  return args[index + 1];
+}
+/**
+ * List all processes currently running on the system.
+ * @returns A promise that resolves to an array of process information objects.
+ */
+export async function listProcesses(): Promise<ProcInfo[]> {
+  try {
+    const filterSystem = (name: string) => {
+      return !systemProcessNames.some(sysName => name && name.toLowerCase().includes(sysName.toLowerCase()));
+    };
+    if (process.platform === 'win32') {
+      // Use PowerShell Get-CimInstance for process listing
+      const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
+      core.debug(`${winProcessCli}:`);
+      const { stdout } = await execAsync(winProcessCli);
+      const lines = stdout.split(/\r?\n/).filter(l => l.trim());
+      const procs: ProcInfo[] = [];
+      for (const line of lines.slice(1)) {
+        const parts = line.split(',');
+        core.debug(line);
+        if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
+          const procName = parts[3] || parts[2];
+          if (filterSystem(procName)) {
+            procs.push({
+              name: procName,
+              pid: Number(parts[1]),
+              ppid: Number(parts[2])
+            });
+          }
+        }
+      }
+      return procs;
+    } else {
+      const unixProcessCli = 'ps -eo pid,ppid,comm';
+      core.debug(`${unixProcessCli}:`);
+      const { stdout } = await execAsync(unixProcessCli);
+      const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
+      const procs: ProcInfo[] = [];
+      for (const line of lines) {
+        core.debug(line);
+        const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+        if (match) {
+          const procName = match[3];
+          if (filterSystem(procName)) {
+            procs.push({
+              pid: Number(match[1]),
+              ppid: Number(match[2]),
+              name: procName
+            });
+          }
+        }
+      }
+      return procs;
+    }
+  } catch (error) {
+    core.error(`Failed to list processes:\n${error}`);
+    return [];
+  }
+}
+/**
+ * Cleanup orphaned processes that were spawned by a specific parent process.
+ * @param parentProcess The parent process information.
+ * @param beforePids The set of PIDs that were present before the parent process started.
+ */
+export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids: Set<number>) {
+  const procs = await listProcesses();
+  core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+  for (const proc of procs) {
+    // Skip system processes
+    if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+      continue;
+    }
+    if (proc.ppid === parentProcess.pid) {
+      // Only kill processes whose parent matches the ppid
+      try {
+        process.kill(proc.pid);
+        core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
+          core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+        } else {
+          core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
+        }
+      }
+    } else if (!beforePids.has(proc.pid)) {
+      // Log processes that weren't present before Unity started but are not Unity children
+      core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
+    }
+  }
+  core.endGroup();
 }

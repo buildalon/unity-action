@@ -42,8 +42,6 @@ else
     done
 fi
 
-
-# Use find to list all .tgz files, then grep for regex match
 TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "*.tgz" 2>/dev/null | grep -E "${PACKAGE}.*[0-9]+\.[0-9]+\.[0-9]+\.tgz" | head -n 1)
 
 if [ -z "${TEMPLATE_PATH}" ]; then
