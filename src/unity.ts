@@ -2,6 +2,7 @@ import core = require('@actions/core');
 import path = require('path');
 import fs = require('fs');
 import {
+    ChildProcessByStdio,
     spawn
 } from 'child_process';
 import {
@@ -58,7 +59,14 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     if (!logPath) {
         throw Error('Log file path not specified in command arguments');
     }
-    const unityProcess = spawn(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    let unityProcess: ChildProcessByStdio<null, null, null>;
+    if (process.platform === 'linux') {
+        const io = require('@actions/io');
+        const xvfbRun = await io.which('xvfb-run', true);
+        unityProcess = spawn(xvfbRun, [command.editorPath, ...command.args], { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    } else {
+        unityProcess = spawn(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    }
     const processId = unityProcess.pid;
     if (!processId) {
         throw new Error('Failed to start Unity process!');

@@ -1,6 +1,6 @@
 {
   "name": "unity-action",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A Github Action to execute Unity Editor command line arguments.",
   "author": "buildalon",
   "repository": {

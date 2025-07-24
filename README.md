@@ -40,5 +40,5 @@ jobs:
 | `editor-path` | The path to the unity editor installation you want to use to execute the arguments with. | If `UNITY_EDITOR_PATH` environment variable is not set. | `env.UNITY_EDITOR_PATH` |
 | `project-path` | The path to the unity project you want to use when executing arguments. | If `UNITY_PROJECT_PATH` environment variable is not set, or if it isn't required for the command. | `env.UNITY_PROJECT_PATH` |
 | `build-target` | The build target to use when executing arguments. | false | |
-| `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. | true | `-quit -batchmode -nographics` |
+| `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. (Note: use `-force-graphics` to override auto-added `-nographics` argument) | true | `-quit -batchmode -nographics` |
 | `log-name` | The name of the log file to create when running the commands. | false | `Unity-yyyyMMddTHHmmss` |

@@ -25658,6 +25658,7 @@ const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
 async function ValidateInputs() {
+    var _a;
     let editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
@@ -25673,7 +25674,16 @@ async function ValidateInputs() {
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
     }
-    if (!inputArgs.includes(`-nographics`)) {
+    const match = editorPath.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
+    if (!match) {
+        throw Error(`Invalid Unity Editor Path: ${editorPath}`);
+    }
+    const unityMajorVersion = (_a = match.groups) === null || _a === void 0 ? void 0 : _a.major;
+    if (!unityMajorVersion) {
+        throw Error(`Invalid Unity Major Version: ${editorPath}`);
+    }
+    const autoAddNographics = parseInt(unityMajorVersion, 10) > 2018;
+    if (autoAddNographics && !inputArgs.includes(`-nographics`) && !inputArgs.includes(`-force-graphics`)) {
         args.push(`-nographics`);
     }
     if (!inputArgs.includes(`-buildTarget`)) {
@@ -25788,7 +25798,15 @@ async function exec(command, onPid) {
     if (!logPath) {
         throw Error('Log file path not specified in command arguments');
     }
-    const unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    let unityProcess;
+    if (process.platform === 'linux') {
+        const io = __nccwpck_require__(7436);
+        const xvfbRun = await io.which('xvfb-run', true);
+        unityProcess = (0, child_process_1.spawn)(xvfbRun, [command.editorPath, ...command.args], { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    }
+    else {
+        unityProcess = (0, child_process_1.spawn)(command.editorPath, command.args, { stdio: ['ignore', 'ignore', 'ignore'], detached: true });
+    }
     const processId = unityProcess.pid;
     if (!processId) {
         throw new Error('Failed to start Unity process!');

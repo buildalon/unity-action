@@ -24,7 +24,16 @@ export async function ValidateInputs(): Promise<UnityCommand> {
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
     }
-    if (!inputArgs.includes(`-nographics`)) {
+    const match = editorPath.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
+    if (!match) {
+        throw Error(`Invalid Unity Editor Path: ${editorPath}`);
+    }
+    const unityMajorVersion = match.groups?.major;
+    if (!unityMajorVersion) {
+        throw Error(`Invalid Unity Major Version: ${editorPath}`);
+    }
+    const autoAddNographics = parseInt(unityMajorVersion, 10) > 2018;
+    if (autoAddNographics && !inputArgs.includes(`-nographics`) && !inputArgs.includes(`-force-graphics`)) {
         args.push(`-nographics`);
     }
     if (!inputArgs.includes(`-buildTarget`)) {
