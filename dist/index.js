@@ -25799,7 +25799,7 @@ async function exec(command, onPid) {
         throw Error('Log file path not specified in command arguments');
     }
     let unityProcess;
-    if (process.platform === 'linux') {
+    if (process.platform === 'linux' && !command.args.includes('-nographics')) {
         const io = __nccwpck_require__(7436);
         const xvfbRun = await io.which('xvfb-run', true);
         unityProcess = (0, child_process_1.spawn)(xvfbRun, [command.editorPath, ...command.args], {

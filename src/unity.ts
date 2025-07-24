@@ -60,7 +60,7 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
         throw Error('Log file path not specified in command arguments');
     }
     let unityProcess: ChildProcessByStdio<null, null, null>;
-    if (process.platform === 'linux') {
+    if (process.platform === 'linux' && !command.args.includes('-nographics')) {
         const io = require('@actions/io');
         const xvfbRun = await io.which('xvfb-run', true);
         unityProcess = spawn(
