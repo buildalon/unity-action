@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script is used to fetch the Unity template from the editor path in env variables.
-set -e
+set -xe
 
 if [ -z "$UNITY_EDITOR_PATH" ]; then
   echo "UNITY_EDITOR_PATH is not set. Please set it to the path of your Unity editor."
@@ -21,7 +21,8 @@ TEMPLATE_DIR="${EDITOR_ROOT}/Data/Resources/PackageManager/ProjectTemplates"
 OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 if [[ "${OS_NAME}" == "darwin" ]]; then
-    TEMPLATE_DIR="${EDITOR_ROOT}/Contents/Resources/PackageManager/ProjectTemplates"
+    # /Applications/Unity/Hub//Editor/2022.3.62f1/Unity.app/Contents/Resources/PackageManager/ProjectTemplates/com.unity.template.3d-8.1.3.tgz
+    TEMPLATE_DIR="${EDITOR_ROOT}/Unity.app/Contents/Resources/PackageManager/ProjectTemplates"
 fi
 
 if [ ! -d "${TEMPLATE_DIR}" ]; then
