@@ -33,7 +33,7 @@ jobs:
       - name: Get Unity Template
         id: template
         shell: bash
-        run: ./.github/workflows/scripts/get-unity-template.sh com.unity.template.3d
+        run: ./.github/workflows/scripts/get-unity-template.sh com.unity.template.3d(-cross-platform)?
       - uses: buildalon/activate-unity-license@v1
         with:
           license: Personal

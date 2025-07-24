@@ -37,7 +37,7 @@ export async function ExecUnity(command: UnityCommand): Promise<void> {
     } catch (error) {
         core.error(`Unity execution failed:\n${error}`);
         if (!exitCode) {
-            exitCode = 1; // Default to 1 if no exit code is provided
+            exitCode = 1;
         }
     } finally {
         if (!isCancelled) {
@@ -71,6 +71,16 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     const pidDir = path.dirname(pidFile);
     if (!fs.existsSync(pidDir)) {
         fs.mkdirSync(pidDir, { recursive: true });
+    } else {
+        try {
+            await fs.promises.access(pidFile, fs.constants.R_OK | fs.constants.W_OK);
+            const killedPid = await tryKillPid(pidFile);
+            if (killedPid) {
+                core.warning(`Killed existing Unity process with pid: ${killedPid}`);
+            }
+        } catch {
+            // PID file does not exist, continue
+        }
     }
     // Write the PID to the PID file
     fs.writeFileSync(pidFile, String(processId));

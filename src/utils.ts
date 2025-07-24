@@ -129,7 +129,9 @@ export async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
       // Use PowerShell Get-CimInstance for process listing
       const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-      core.startGroup(`${winProcessCli}:`);
+      if (core.isDebug()) {
+        core.startGroup(`${winProcessCli}:`);
+      }
       try {
         const { stdout } = await execAsync(winProcessCli);
         const lines = stdout.split(/\r?\n/).filter(l => l.trim());
@@ -150,11 +152,15 @@ export async function listProcesses(): Promise<ProcInfo[]> {
         }
         return procs;
       } finally {
-        core.endGroup();
+        if (core.isDebug()) {
+          core.endGroup();
+        }
       }
     } else {
       const unixProcessCli = 'ps -eo pid,ppid,comm';
-      core.startGroup(`${unixProcessCli}:`);
+      if (core.isDebug()) {
+        core.startGroup(`${unixProcessCli}:`);
+      }
       try {
         const { stdout } = await execAsync(unixProcessCli);
         const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
@@ -175,7 +181,9 @@ export async function listProcesses(): Promise<ProcInfo[]> {
         }
         return procs;
       } finally {
-        core.endGroup();
+        if (core.isDebug()) {
+          core.endGroup();
+        }
       }
     }
   } catch (error) {
@@ -190,30 +198,36 @@ export async function listProcesses(): Promise<ProcInfo[]> {
  */
 export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids: Set<number>) {
   const procs = await listProcesses();
-  core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
-  for (const proc of procs) {
-    // Skip system processes
-    if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-      continue;
-    }
-    if (proc.ppid === parentProcess.pid) {
-      // Only kill processes whose parent matches the ppid
-      try {
-        process.kill(proc.pid);
-        core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
-          core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
-        } else {
-          core.error(`Failed to kill orphaned process ${proc.name} (pid: ${proc.pid}):\n\t${error}`);
-        }
+  if (core.isDebug()) {
+    core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+  }
+  try {
+    for (const proc of procs) {
+      // Skip system processes
+      if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+        continue;
       }
-    } else if (!beforePids.has(proc.pid)) {
-      // Log processes that weren't present before Unity started but are not Unity children
-      core.info(`Detected new process not parented by Unity: ${proc.name} (pid: ${proc.pid}, ppid: ${proc.ppid})`);
+      if (proc.ppid === parentProcess.pid) {
+        // Only kill processes whose parent matches the ppid
+        try {
+          process.kill(proc.pid);
+          core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
+            core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+          } else {
+            core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+          }
+        }
+      } else if (!beforePids.has(proc.pid)) {
+        core.info(`Detected new process not parented by ${parentProcess.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+      }
+    }
+  } finally {
+    if (core.isDebug()) {
+      core.endGroup();
     }
   }
-  core.endGroup();
 }
 /**
  * Attempts to kill a process with the given PID read from a PID file.
@@ -230,7 +244,7 @@ export async function tryKillPid(pidFilePath: string): Promise<number | null> {
     const fileHandle = await fs.promises.open(pidFilePath, 'r');
     try {
       pid = parseInt(await fileHandle.readFile('utf8'));
-      core.info(`Attempting to kill process with pid: ${pid}`);
+      core.info(`Killing process pid: ${pid}`);
       process.kill(pid);
     } catch (error) {
       if (error.code !== 'ENOENT' && error.code !== 'ESRCH') {
