@@ -129,62 +129,46 @@ export async function listProcesses(): Promise<ProcInfo[]> {
     if (process.platform === 'win32') {
       // Use PowerShell Get-CimInstance for process listing
       const winProcessCli = 'powershell -Command "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name | ConvertTo-Csv -NoTypeInformation"';
-      if (core.isDebug()) {
-        core.startGroup(`${winProcessCli}:`);
-      }
-      try {
-        const { stdout } = await execAsync(winProcessCli);
-        const lines = stdout.split(/\r?\n/).filter(l => l.trim());
-        const procs: ProcInfo[] = [];
-        for (const line of lines.slice(1)) {
-          const parts = line.split(',');
-          core.debug(line);
-          if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
-            const procName = parts[3] || parts[2];
-            if (filterSystem(procName)) {
-              procs.push({
-                name: procName,
-                pid: Number(parts[1]),
-                ppid: Number(parts[2])
-              });
-            }
+      core.debug(`${winProcessCli}:`);
+      const { stdout } = await execAsync(winProcessCli);
+      const lines = stdout.split(/\r?\n/).filter(l => l.trim());
+      const procs: ProcInfo[] = [];
+      for (const line of lines.slice(1)) {
+        const parts = line.split(',');
+        core.debug(line);
+        if (parts.length >= 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2]))) {
+          const procName = parts[3] || parts[2];
+          if (filterSystem(procName)) {
+            procs.push({
+              name: procName,
+              pid: Number(parts[1]),
+              ppid: Number(parts[2])
+            });
           }
         }
-        return procs;
-      } finally {
-        if (core.isDebug()) {
-          core.endGroup();
-        }
       }
+      return procs;
     } else {
       const unixProcessCli = 'ps -eo pid,ppid,comm';
-      if (core.isDebug()) {
-        core.startGroup(`${unixProcessCli}:`);
-      }
-      try {
-        const { stdout } = await execAsync(unixProcessCli);
-        const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
-        const procs: ProcInfo[] = [];
-        for (const line of lines) {
-          core.debug(line);
-          const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
-          if (match) {
-            const procName = match[3];
-            if (filterSystem(procName)) {
-              procs.push({
-                pid: Number(match[1]),
-                ppid: Number(match[2]),
-                name: procName
-              });
-            }
+      core.debug(`${unixProcessCli}:`);
+      const { stdout } = await execAsync(unixProcessCli);
+      const lines = stdout.split(/\r?\n/).slice(1).filter(l => l.trim());
+      const procs: ProcInfo[] = [];
+      for (const line of lines) {
+        core.debug(line);
+        const match = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
+        if (match) {
+          const procName = match[3];
+          if (filterSystem(procName)) {
+            procs.push({
+              pid: Number(match[1]),
+              ppid: Number(match[2]),
+              name: procName
+            });
           }
         }
-        return procs;
-      } finally {
-        if (core.isDebug()) {
-          core.endGroup();
-        }
       }
+      return procs;
     }
   } catch (error) {
     core.error(`Failed to list processes:\n${error}`);
@@ -198,31 +182,31 @@ export async function listProcesses(): Promise<ProcInfo[]> {
  */
 export async function cleanupProcessOrphans(parentProcess: ProcInfo, beforePids: Set<number>) {
   const procs = await listProcesses();
-  core.startGroup(`Found ${procs.length} processes after ${parentProcess.name} started.`);
-  try {
-    for (const proc of procs) {
-      // Skip system processes
-      if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
-        continue;
-      }
-      if (proc.ppid === parentProcess.pid) {
-        // Only kill processes whose parent matches the ppid
-        try {
-          process.kill(proc.pid);
-          core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
-            core.info(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
-          } else {
-            core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
-          }
-        }
-      } else if (!beforePids.has(proc.pid)) {
-        core.info(`Detected new process not parented by ${parentProcess.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
-      }
+  if (procs.length === 0) {
+    core.debug('No processes found to clean up.');
+    return;
+  }
+  core.info(`Found ${procs.length} processes after ${parentProcess.name} started.`);
+  for (const proc of procs) {
+    // Skip system processes
+    if (systemProcessNames.some(name => proc.name && proc.name.toLowerCase().includes(name.toLowerCase()))) {
+      continue;
     }
-  } finally {
-    core.endGroup();
+    if (proc.ppid === parentProcess.pid) {
+      // Only kill processes whose parent matches the ppid
+      try {
+        process.kill(proc.pid);
+        core.info(`Killed orphaned Unity child process: ${proc.name} (pid: ${proc.pid})`);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === 'ESRCH') {
+          core.debug(`Orphaned process ${proc.name} (pid: ${proc.pid}) already exited.`);
+        } else {
+          core.error(`Failed to kill orphaned process ${proc.name}: {pid: ${proc.pid}}:\n\t${error}`);
+        }
+      }
+    } else if (!beforePids.has(proc.pid)) {
+      core.debug(`Detected new process not parented by ${parentProcess.name}: {pid: ${proc.pid}, ppid: ${proc.ppid}}`);
+    }
   }
 }
 /**
@@ -234,7 +218,7 @@ export async function tryKillPid(pidFilePath: string): Promise<number | null> {
   let pid: number | null = null;
   try {
     if (!fs.existsSync(pidFilePath)) {
-      core.info(`PID file does not exist: ${pidFilePath}`);
+      core.debug(`PID file does not exist: ${pidFilePath}`);
       return null;
     }
     const fileHandle = await fs.promises.open(pidFilePath, 'r');

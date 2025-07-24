@@ -11,9 +11,10 @@ PACKAGE="$1"
 
 if [ -z "$PACKAGE" ]; then
     echo "Usage: $0 <package-name-or-regex>"
-    echo "Example: $0 com.unity.template.3d"
+    echo "Example: $0 'com.unity.template.3d'"
     echo "         $0 'com.unity.template.3d-cross-platform'"
-    echo "         $0 'com.unity.template.*' (regex supported)"
+    echo "         $0 'com.unity.template.3d*' (regex supported)"
+    echo "         $0 'com.unity.template.3d(-cross-platform)?' (regex supported)"
     exit 1
 fi
 
