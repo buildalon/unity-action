@@ -37,7 +37,7 @@ else
     done
 fi
 
-TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "${PACKAGE}.*.tgz" | head -n 1)
+TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "${PACKAGE}-*.tgz" | head -n 1)
 
 if [ -z "${TEMPLATE_PATH}" ]; then
     echo "${PACKAGE} path not found in ${TEMPLATE_DIR}!"
