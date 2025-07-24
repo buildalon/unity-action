@@ -50,13 +50,20 @@ jobs:
           openupm add com.virtualmaker.buildalon
         working-directory: ${{ env.UNITY_PROJECT_PATH }}
         shell: bash
-      # - uses: ./ # buildalon/unity-actions
-      #   name: ${{ matrix.build-target }}-Validate
-      #   with:
-      #     build-target: ${{ matrix.build-target }}
-      #     project-path: ${{ env.UNITY_PROJECT_PATH }}
-      #     log-name: ${{ matrix.build-target }}-Validate
-      #     args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+      - uses: ./ # buildalon/unity-actions
+        name: ${{ matrix.build-target }}-Validate
+        with:
+          build-target: ${{ matrix.build-target }}
+          project-path: ${{ env.UNITY_PROJECT_PATH }}
+          log-name: ${{ matrix.build-target }}-Validate
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
+      - name: Verify Sample Scene
+        shell: bash
+        run: |
+          if [ ! -f "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity" ]; then
+            echo "${{ env.UNITY_PROJECT_PATH }}/Assets/Scenes/SampleScene.unity not found in Assets/Scenes"
+            exit 1
+          fi
       - uses:  ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
