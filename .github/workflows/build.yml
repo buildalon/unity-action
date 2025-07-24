@@ -57,30 +57,13 @@ jobs:
           project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: ${{ matrix.build-target }}-Validate
           args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject'
-      - name: Verify Sample Scene
-        shell: bash
-        run: |
-          # list all .unity files in Assets
-          project_root="${{ env.UNITY_PROJECT_PATH }}"
-          scenes=$(find "${project_root}/Assets" -name "*.unity")
-          if [ -n "${scenes}" ]; then
-            echo "Found the following .unity files:"
-            for scene in ${scenes}; do
-              echo " - ${scene}"
-            done
-          fi
-
-          if [ ! -f "${project_root}/Assets/Scenes/SampleScene.unity" ]; then
-            echo "${project_root}/Assets/Scenes/SampleScene.unity not found!"
-            exit 1
-          fi
       - uses:  ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
           build-target: ${{ matrix.build-target }}
           project-path: ${{ env.UNITY_PROJECT_PATH }}
           log-name: ${{ matrix.build-target }}-Build
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
+          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild'
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()
