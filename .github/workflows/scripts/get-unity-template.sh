@@ -15,23 +15,34 @@ if [ -z "$PACKAGE" ]; then
     exit 1
 fi
 
-TEMPLATE_PATH=$(find "$UNITY_EDITOR_PATH" -name "${PACKAGE}.*.tgz" | head -n 1)
+# UNITY_EDITOR_PATH: /home/runner/Unity/Hub/Editor/<version>/Editor/Unity
+# TEMPLATE_PATH=/home/runner/Unity/Hub/Editor/<version>/Editor/Data/Resources/PackageManager/ProjectTemplates/com.unity.template.3d-<version>.tgz
+# Derive the editor root (strip trailing /Unity or /Unity.exe)
+EDITOR_ROOT=$(dirname "${UNITY_EDITOR_PATH}")
+TEMPLATE_DIR="${EDITOR_ROOT}/Data/Resources/PackageManager/ProjectTemplates"
 
-if [ -z "$TEMPLATE_PATH" ]; then
-    echo "Template path not found in $UNITY_EDITOR_PATH!"
-
-    PACKAGES=$(find "$UNITY_EDITOR_PATH/../Resources/PackageManager/ProjectTemplates" -name "*.tgz")
-
-    if [ -z "$PACKAGES" ]; then
-        echo "No templates found in $UNITY_EDITOR_PATH/../Resources/PackageManager/ProjectTemplates"
-    else
-        echo "Available templates:"
-        for pkg in $PACKAGES; do
-            echo " - $(basename "$pkg")"
-        done
-    fi
+if [ ! -d "${TEMPLATE_DIR}" ]; then
+    echo "Template directory not found: ${TEMPLATE_DIR}"
     exit 1
 fi
 
-echo "TEMPLATE_PATH=$TEMPLATE_PATH"
-echo "TEMPLATE_PATH=$TEMPLATE_PATH" >> "$GITHUB_OUTPUT"
+PACKAGES=$(find "${TEMPLATE_DIR}" -name "*.tgz" 2>/dev/null)
+
+if [ -z "${PACKAGES}" ]; then
+    echo "No templates found in ${TEMPLATE_DIR}"
+else
+    echo "Available templates:"
+    for pkg in ${PACKAGES}; do
+        echo " - $(basename "${pkg}")"
+    done
+fi
+
+TEMPLATE_PATH=$(find "${TEMPLATE_DIR}" -name "${PACKAGE}.*.tgz" | head -n 1)
+
+if [ -z "${TEMPLATE_PATH}" ]; then
+    echo "${PACKAGE} path not found in ${TEMPLATE_DIR}!"
+    exit 1
+fi
+
+echo "TEMPLATE_PATH=${TEMPLATE_PATH}"
+echo "TEMPLATE_PATH=${TEMPLATE_PATH}" >> "${GITHUB_OUTPUT}"
