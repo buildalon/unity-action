@@ -121,7 +121,7 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     let logEnded = false;
     const tailLog = async () => {
         const debugEnabled = core.isDebug();
-        let leftover = '';
+        let leftover: string = '';
         while (!logEnded) {
             try {
                 const stats = fs.statSync(logPath);
@@ -129,7 +129,7 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
                     const fd = fs.openSync(logPath, 'r');
                     const buffer = Buffer.alloc(stats.size - lastSize);
                     fs.readSync(fd, buffer, 0, buffer.length, lastSize);
-                    let chunk = buffer.toString('utf8');
+                    let chunk: string = buffer.toString('utf8');
                     fs.closeSync(fd);
                     lastSize = stats.size;
                     if (debugEnabled) {
@@ -144,23 +144,7 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
                                 let jsonStr = line.slice(6);
                                 try {
                                     const msg = JSON.parse(jsonStr);
-                                    // Convert any time fields to UTC
-                                    for (const key of Object.keys(msg)) {
-                                        if (/time/i.test(key) && typeof msg[key] === 'number') {
-                                            const d = new Date(msg[key]);
-                                            msg[key + '_utc'] = d.toISOString();
-                                        }
-                                    }
-                                    // Print formatted message
-                                    let messageString = '';
-                                    if (msg.severity) {
-                                        messageString += `::${msg.severity.toString().toLowerCase()}::`;
-                                    }
-                                    messageString += `${msg.message || ''}\n`;
-                                    process.stdout.write(messageString);
-                                    if (msg.stacktrace) {
-                                        process.stdout.write(`${msg.stacktrace}\n`);
-                                    }
+                                    process.stdout.write(JSON.stringify(msg, null, 2) + '\n');
                                 } catch (e) {
                                     // If JSON parse fails, print raw
                                     process.stdout.write(`[UTP] Malformed: ${jsonStr}\n`);

@@ -25875,21 +25875,7 @@ async function exec(command, onPid) {
                                 let jsonStr = line.slice(6);
                                 try {
                                     const msg = JSON.parse(jsonStr);
-                                    for (const key of Object.keys(msg)) {
-                                        if (/time/i.test(key) && typeof msg[key] === 'number') {
-                                            const d = new Date(msg[key]);
-                                            msg[key + '_utc'] = d.toISOString();
-                                        }
-                                    }
-                                    let messageString = '';
-                                    if (msg.severity) {
-                                        messageString += `::${msg.severity.toString().toLowerCase()}::`;
-                                    }
-                                    messageString += `${msg.message || ''}\n`;
-                                    process.stdout.write(messageString);
-                                    if (msg.stacktrace) {
-                                        process.stdout.write(`${msg.stacktrace}\n`);
-                                    }
+                                    process.stdout.write(JSON.stringify(msg, null, 2) + '\n');
                                 }
                                 catch (e) {
                                     process.stdout.write(`[UTP] Malformed: ${jsonStr}\n`);
