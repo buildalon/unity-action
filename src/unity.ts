@@ -120,6 +120,8 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
     let lastSize = 0;
     let logEnded = false;
     const tailLog = async () => {
+        const debugEnabled = core.isDebug();
+        let leftover = '';
         while (!logEnded) {
             try {
                 const stats = fs.statSync(logPath);
@@ -127,9 +129,45 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
                     const fd = fs.openSync(logPath, 'r');
                     const buffer = Buffer.alloc(stats.size - lastSize);
                     fs.readSync(fd, buffer, 0, buffer.length, lastSize);
-                    process.stdout.write(buffer.toString('utf8'));
+                    let chunk = buffer.toString('utf8');
                     fs.closeSync(fd);
                     lastSize = stats.size;
+                    if (debugEnabled) {
+                        process.stdout.write(chunk);
+                    } else {
+                        // Process UTP messages
+                        chunk = leftover + chunk;
+                        const lines = chunk.split(/\r?\n/);
+                        leftover = lines.pop() || '';
+                        for (const line of lines) {
+                            if (line.startsWith('##utp:')) {
+                                let jsonStr = line.slice(6);
+                                try {
+                                    const msg = JSON.parse(jsonStr);
+                                    // Convert any time fields to UTC
+                                    for (const key of Object.keys(msg)) {
+                                        if (/time/i.test(key) && typeof msg[key] === 'number') {
+                                            const d = new Date(msg[key]);
+                                            msg[key + '_utc'] = d.toISOString();
+                                        }
+                                    }
+                                    // Print formatted message
+                                    let messageString = '';
+                                    if (msg.severity) {
+                                        messageString += `::${msg.severity.toString().toLowerCase()}::`;
+                                    }
+                                    messageString += `${msg.message || ''}\n`;
+                                    process.stdout.write(messageString);
+                                    if (msg.stacktrace) {
+                                        process.stdout.write(`${msg.stacktrace}\n`);
+                                    }
+                                } catch (e) {
+                                    // If JSON parse fails, print raw
+                                    process.stdout.write(`[UTP] Malformed: ${jsonStr}\n`);
+                                }
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 // ignore read errors
@@ -137,7 +175,6 @@ async function exec(command: UnityCommand, onPid: (pid: ProcInfo) => void): Prom
             await new Promise(res => setTimeout(res, logPollingInterval));
         }
         // Write a newline at the end of the log tail
-        // prevents appending logs from being printed on the same line
         process.stdout.write('\n');
     };
     const timeout = 10000; // 10 seconds
