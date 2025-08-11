@@ -25850,8 +25850,8 @@ async function exec(command, onPid) {
     }
     let lastSize = 0;
     let logEnded = false;
+    const logs = [];
     const tailLog = async () => {
-        const debugEnabled = core.isDebug();
         let leftover = '';
         while (!logEnded) {
             try {
@@ -25863,24 +25863,33 @@ async function exec(command, onPid) {
                     let chunk = buffer.toString('utf8');
                     fs.closeSync(fd);
                     lastSize = stats.size;
-                    if (debugEnabled) {
-                        process.stdout.write(chunk);
-                    }
-                    else {
-                        chunk = leftover + chunk;
-                        const lines = chunk.split(/\r?\n/);
-                        leftover = lines.pop() || '';
-                        for (const line of lines) {
-                            if (line.startsWith('##utp:')) {
-                                let jsonStr = line.slice(6);
-                                try {
-                                    const msg = JSON.parse(jsonStr);
-                                    process.stdout.write(JSON.stringify(msg, null, 2) + '\n');
-                                }
-                                catch (e) {
-                                    process.stdout.write(`[UTP] Malformed: ${jsonStr}\n`);
+                    chunk = leftover + chunk;
+                    const lines = chunk.split(/\r?\n/);
+                    leftover = lines.pop() || '';
+                    for (const line of lines) {
+                        if (line.startsWith('##utp:')) {
+                            try {
+                                const utp = JSON.parse(line.slice(6));
+                                logs.push(utp);
+                                if (utp.type === 'LogEntry') {
+                                    switch (utp.severity) {
+                                        case 'Error':
+                                            core.error(utp.message, { file: utp.file, startLine: utp.line });
+                                            break;
+                                        case 'Warning':
+                                            core.warning(utp.message, { file: utp.file, startLine: utp.line });
+                                            break;
+                                        default:
+                                            core.info(utp.message);
+                                            break;
+                                    }
                                 }
                             }
+                            catch (e) {
+                            }
+                        }
+                        else {
+                            process.stdout.write(line + '\n');
                         }
                     }
                 }
@@ -25924,6 +25933,36 @@ async function exec(command, onPid) {
         catch (_b) {
             fileLocked = true;
             await new Promise(res => setTimeout(res, logPollingInterval));
+        }
+    }
+    if (logs.length > 0) {
+        try {
+            core.summary.addHeading('Unity Action Logs');
+            const logMap = new Map();
+            for (const log of logs) {
+                for (const [key, value] of Object.entries(log)) {
+                    logMap.set(key, value.toString());
+                }
+            }
+            const keys = new Set();
+            for (const log of logs) {
+                Object.keys(log).forEach(key => keys.add(key));
+            }
+            const headers = [];
+            for (const key of keys) {
+                headers.push({ data: key });
+            }
+            const rows = [];
+            rows.push(headers);
+            for (const log of logs) {
+                const dataRow = Array.from(keys).map(key => { var _a, _b; return ({ data: (_b = (_a = log[key]) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '' }); });
+                rows.push(dataRow);
+            }
+            const summary = core.summary.addTable(rows);
+            await summary.write();
+        }
+        catch (e) {
+            core.warning('Failed to write Unity Action logs to summary: ' + e);
         }
     }
     return exitCode;
