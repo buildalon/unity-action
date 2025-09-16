@@ -39,7 +39,7 @@ jobs:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: ./ # buildalon/unity-actions
+      - uses: ./ # buildalon/unity-action
         name: Create Test Project
         with:
           log-name: create-test-project
@@ -50,7 +50,7 @@ jobs:
           openupm add com.virtualmaker.buildalon
         working-directory: ${{ env.UNITY_PROJECT_PATH }}
         shell: bash
-      - uses: ./ # buildalon/unity-actions
+      - uses: ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Validate
         with:
           build-target: ${{ matrix.build-target }}
