@@ -30,17 +30,17 @@ jobs:
           remove_dotnet: false
           remove_tool_cache: false
       - uses: actions/checkout@v5
-      - uses: buildalon/unity-setup@v2
+      - uses: buildalon/unity-setup@main
         with:
           version-file: None
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
-      - uses: buildalon/activate-unity-license@v2
+      - uses: buildalon/activate-unity-license@main
         with:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: buildalon/create-unity-project@v1
+      - uses: buildalon/create-unity-project@main
         id: unity-project
         with:
           project-name: Test Project
