@@ -30,17 +30,17 @@ jobs:
           remove_dotnet: false
           remove_tool_cache: false
       - uses: actions/checkout@v5
-      - uses: RageAgainstThePixel/unity-setup@v2
+      - uses: buildalon/unity-setup@v2
         with:
           version-file: None
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
-      - uses: RageAgainstThePixel/activate-unity-license@v2
+      - uses: buildalon/activate-unity-license@v2
         with:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: RageAgainstThePixel/create-unity-project@v2
+      - uses: buildalon/create-unity-project@v1
         id: unity-project
         with:
           project-name: Test Project
@@ -50,14 +50,14 @@ jobs:
           openupm add com.utilities.buildpipeline
         working-directory: ${{ steps.unity-project.outputs.project-path }}
         shell: bash
-      - uses: ./ # RageAgainstThePixel/unity-action
+      - uses: ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Validate
         with:
           build-target: ${{ matrix.build-target }}
           project-path: ${{ steps.unity-project.outputs.project-path }}
           log-name: ${{ matrix.build-target }}-Validate
           args: -quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset
-      - uses: ./ # RageAgainstThePixel/unity-action
+      - uses: ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
           build-target: ${{ matrix.build-target }}
