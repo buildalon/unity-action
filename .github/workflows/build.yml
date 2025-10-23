@@ -21,54 +21,54 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-    env:
-      UNITY_PROJECT_PATH: ${{ github.workspace }}/Test Project
     steps:
-      - uses: actions/checkout@v4
-      - uses: buildalon/unity-setup@v1
+      - name: Free Disk Space
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.unity-version == '6000.2' }}
+        uses: endersonmenezes/free-disk-space@713d134e243b926eba4a5cce0cf608bfd1efb89a # v2.1.1
+        with:
+          remove_android: true
+          remove_dotnet: false
+          remove_tool_cache: false
+      - uses: actions/checkout@v5
+      - uses: RageAgainstThePixel/unity-setup@v2
         with:
           version-file: None
           build-targets: ${{ matrix.build-target }}
           unity-version: ${{ matrix.unity-version }}
-      - name: Get Unity Template
-        id: template
-        shell: bash
-        run: ./.github/workflows/scripts/get-unity-template.sh 'com.unity.template.3d(-cross-platform)?'
-      - uses: buildalon/activate-unity-license@v1
+      - uses: RageAgainstThePixel/activate-unity-license@v2
         with:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: ./ # buildalon/unity-action
-        name: Create Test Project
+      - uses: RageAgainstThePixel/create-unity-project@v2
+        id: unity-project
         with:
-          log-name: create-test-project
-          args: '-quit -nographics -batchmode -createProject "${{ env.UNITY_PROJECT_PATH }}" -cloneFromTemplate "${{ steps.template.outputs.TEMPLATE_PATH }}"'
+          project-name: Test Project
       - name: Add Build Pipeline Package
         run: |
           npm install -g openupm-cli
-          openupm add com.virtualmaker.buildalon
-        working-directory: ${{ env.UNITY_PROJECT_PATH }}
+          openupm add com.utilities.buildpipeline
+        working-directory: ${{ steps.unity-project.outputs.project-path }}
         shell: bash
-      - uses: ./ # buildalon/unity-action
+      - uses: ./ # RageAgainstThePixel/unity-action
         name: ${{ matrix.build-target }}-Validate
         with:
           build-target: ${{ matrix.build-target }}
-          project-path: ${{ env.UNITY_PROJECT_PATH }}
+          project-path: ${{ steps.unity-project.outputs.project-path }}
           log-name: ${{ matrix.build-target }}-Validate
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset'
-      - uses:  ./ # buildalon/unity-action
+          args: -quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.ValidateProject -importTMProEssentialsAsset
+      - uses: ./ # RageAgainstThePixel/unity-action
         name: ${{ matrix.build-target }}-Build
         with:
           build-target: ${{ matrix.build-target }}
-          project-path: ${{ env.UNITY_PROJECT_PATH }}
+          project-path:  ${{ steps.unity-project.outputs.project-path }}
           log-name: ${{ matrix.build-target }}-Build
-          args: '-quit -nographics -batchmode -executeMethod Buildalon.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity'
+          args: -quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity ${{ matrix.build-args }}
       - uses: actions/upload-artifact@v4
         name: Upload Artifacts
         if: always()
         with:
-          name: ${{ github.run_number }}.${{ github.run_attempt }} ${{ matrix.unity-version }} ${{ matrix.name }} Artifacts
+          name: ${{ github.run_number }}.${{ github.run_attempt }} ${{ matrix.os }} ${{ matrix.unity-version }} ${{ matrix.build-target }} Artifacts
           path: |
             ${{ github.workspace }}/**/*.log
             ${{ github.workspace }}/**/Builds/${{ matrix.build-target }}/
