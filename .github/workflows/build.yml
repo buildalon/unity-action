@@ -23,7 +23,7 @@ jobs:
       contents: read
     steps:
       - name: Free Disk Space
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.unity-version == '6000.2' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         uses: endersonmenezes/free-disk-space@713d134e243b926eba4a5cce0cf608bfd1efb89a # v2.1.1
         with:
           remove_android: true

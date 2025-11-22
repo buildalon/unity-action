@@ -5,7 +5,7 @@ branding:
   color: red
 inputs:
   editor-path:
-    description: 'Path to the Unity Editor. If not provided, the action will use the environment variable UNITY_EDITOR_PATH.'
+    description: 'Path to the Unity Editor. If not provided, the action will use look it up from the project-path or the environment variable UNITY_EDITOR_PATH.'
     required: false
   project-path:
     description: 'Path to the Unity project. If not provided, the action will use the environment variable UNITY_PROJECT_PATH.'
@@ -23,5 +23,5 @@ inputs:
     required: false
     default: 'Unity'
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: node24
+  main: dist/index.js
