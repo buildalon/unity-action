@@ -42,3 +42,4 @@ jobs:
 | `build-target` | The build target to use when executing arguments. | false | |
 | `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. (Note: use `-force-graphics` to override auto-added `-nographics` argument) | true | `-quit -batchmode -nographics` |
 | `log-name` | The name of the log file to create when running the commands. | false | `Unity-yyyyMMddTHHmmss` |
+
