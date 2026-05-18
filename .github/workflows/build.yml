@@ -24,12 +24,12 @@ jobs:
     steps:
       - name: Free Disk Space
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: endersonmenezes/free-disk-space@713d134e243b926eba4a5cce0cf608bfd1efb89a # v2.1.1
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v2.1.1
         with:
           remove_android: true
           remove_dotnet: false
           remove_tool_cache: false
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: buildalon/unity-setup@main
         with:
           version-file: None
@@ -64,7 +64,7 @@ jobs:
           project-path:  ${{ steps.unity-project.outputs.project-path }}
           log-name: ${{ matrix.build-target }}-Build
           args: -quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity ${{ matrix.build-args }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         name: Upload Artifacts
         if: always()
         with:
