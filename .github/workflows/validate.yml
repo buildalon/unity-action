@@ -1,7 +1,7 @@
 name: validate
 on:
   schedule:
-    - cron: '0 0 * * 0' # Every Sunday at midnight
+    - cron: '0 8 23 * *' # monthly
   push:
     branches: ['main']
   pull_request:
