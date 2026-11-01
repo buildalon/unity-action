@@ -12,44 +12,128 @@ on:
         required: true
       UNITY_PASSWORD:
         required: true
+      CI_TOKEN:
+        description: Keys the encrypted run license that macOS and Linux rows activate from.
+        required: false
 jobs:
   build:
-    name: ${{ matrix.name }}
+    # rows are grouped by editor version, so the name carries the OS and target
+    name: ${{ matrix.os }} ${{ matrix.build-target }} ${{ matrix.build-args }}
     strategy:
       matrix: ${{ fromJSON(inputs.matrix) }}
       fail-fast: false
     runs-on: ${{ matrix.os }}
+    # a hung editor or licensing call must not hold the matrix; Android rows build a player through Gradle and get more
+    timeout-minutes: ${{ matrix.build-target == 'Android' && 60 || 45 }}
     permissions:
       contents: read
     steps:
+      # runs alongside checkout; the wait before the editor install joins it
       - name: Free Disk Space
+        id: free-disk-space
+        background: true
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v2.1.1
+        uses: endersonmenezes/free-disk-space@8b8cd4e2277836962939a8f3b4ea0ee4bc006156 # v4.0.1
         with:
           remove_android: true
           remove_dotnet: false
           remove_tool_cache: false
-      - uses: actions/checkout@v6
-      - uses: buildalon/unity-setup@main
+      - uses: actions/checkout@v7
+      - name: Wait for Free Disk Space
+        wait: free-disk-space
+      - uses: actions/setup-node@v7
         with:
-          version-file: None
-          build-targets: ${{ matrix.build-target }}
-          unity-version: ${{ matrix.unity-version }}
-      - uses: buildalon/activate-unity-license@main
+          node-version: 24.x
+          cache: npm
+      # installs the editor with the unity-cli this action bundles; unity-setup@v2 still carries a unity-cli that
+      # can't find Unity Hub 3.20+ on Linux
+      - name: Setup Unity
+        shell: bash
+        timeout-minutes: 30
+        env:
+          MATRIX_UNITY_VERSION: ${{ matrix.unity-version }}
+          MATRIX_BUILD_TARGET: ${{ matrix.build-target }}
+        run: |
+          set -euo pipefail
+          npm ci
+          npx --no-install unity-cli upm-install --json
+          npx --no-install unity-cli setup-unity --unity-version "${MATRIX_UNITY_VERSION}" --build-targets "${MATRIX_BUILD_TARGET}" --json
+      # macOS and Linux runners all report the same machine identity to Unity, so the license the license job activated
+      # once for this run serves every macOS or Linux row; it arrives as an encrypted artifact and is never returned.
+      # Without it, or when it no longer fits this machine, the row activates with the account. Windows runners are a
+      # new machine every job, so Windows rows activate with the account and return the license.
+      - name: Download run license
+        id: download-run-license
+        if: ${{ runner.os != 'Windows' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: unity-license-${{ runner.os }}
+          path: ${{ runner.temp }}/unity-license
+      - name: Decrypt run license
+        id: run-license
+        if: ${{ steps.download-run-license.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          CI_TOKEN: ${{ secrets.CI_TOKEN }}
+        run: |
+          set -euo pipefail
+          dir="${RUNNER_TEMP}/unity-license"
+          license="${dir}/Unity_lic.ulf"
+          # the key never reaches a command line: openssl reads it from the environment
+          export LICENSE_KEY="${CI_TOKEN}:${GITHUB_RUN_ID}"
+          if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in "${dir}/unity-license.enc" -out "${license}" -pass env:LICENSE_KEY; then
+            echo 'Could not decrypt the run license' >&2
+            exit 1
+          fi
+          echo "path=${license}" >> "${GITHUB_OUTPUT}"
+      # activates from UNITY_LICENSE before signing in; the post step skips the return on GitHub-hosted macOS and Linux
+      - uses: buildalon/activate-unity-license@v3
+        env:
+          UNITY_LICENSE: ${{ steps.run-license.outputs.path }}
         with:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
-      - uses: buildalon/create-unity-project@main
+      - name: Remove run license
+        if: ${{ always() && steps.download-run-license.outcome == 'success' }}
+        shell: bash
+        run: rm -rf "${RUNNER_TEMP}/unity-license"
+      - uses: buildalon/create-unity-project@v3
         id: unity-project
         with:
           project-name: Test Project
+      - name: Install Android dependencies
+        if: ${{ matrix.build-target == 'Android' }}
+        shell: bash
+        env:
+          PROJECT_PATH: ${{ steps.unity-project.outputs.project-path }}
+        run: npx --no-install unity-cli setup-unity -p "${PROJECT_PATH}" -m android
       - name: Add Build Pipeline Package
         run: |
           npm install -g openupm-cli
           openupm add com.utilities.buildpipeline
         working-directory: ${{ steps.unity-project.outputs.project-path }}
         shell: bash
+      - name: Disable WebGL Compression
+        # Brotli on the .wasm takes minutes per build and the tests never serve the player, so it only costs job time
+        if: ${{ matrix.build-target == 'WebGL' }}
+        shell: pwsh
+        env:
+          PROJECT_PATH: ${{ steps.unity-project.outputs.project-path }}
+        run: |
+          $path = Join-Path $env:PROJECT_PATH 'ProjectSettings/ProjectSettings.asset'
+          $text = Get-Content -Path $path -Raw
+          # 0 is Brotli, 1 is Gzip and 2 is Disabled
+          if ($text -match '(?m)^([ \t]*)webGLCompressionFormat:.*$') {
+            $text = $text -replace '(?m)^([ \t]*)webGLCompressionFormat:.*$', '${1}webGLCompressionFormat: 2'
+          } else {
+            # the asset holds only the PlayerSettings document, whose keys sit two spaces in
+            $text = $text.TrimEnd() + "`n  webGLCompressionFormat: 2`n"
+          }
+          Set-Content -Path $path -Value $text -NoNewline
+          Select-String -Path $path -Pattern 'webGLCompressionFormat'
       - uses: ./ # buildalon/unity-action
         name: ${{ matrix.build-target }}-Validate
         with:
@@ -61,7 +145,7 @@ jobs:
         name: ${{ matrix.build-target }}-Build
         with:
           build-target: ${{ matrix.build-target }}
-          project-path:  ${{ steps.unity-project.outputs.project-path }}
+          project-path: ${{ steps.unity-project.outputs.project-path }}
           log-name: ${{ matrix.build-target }}-Build
           args: -quit -nographics -batchmode -executeMethod Utilities.Editor.BuildPipeline.UnityPlayerBuildTools.StartCommandLineBuild -sceneList Assets/Scenes/SampleScene.unity ${{ matrix.build-args }}
       - uses: actions/upload-artifact@v7
