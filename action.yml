@@ -1,8 +1,8 @@
-name: Buildalon Unity Action
+name: 'Buildalon Unity Action'
 description: A Github Action to execute Unity Editor command line arguments.
 branding:
   icon: cpu
-  color: red
+  color: 'red'
 inputs:
   editor-path:
     description: 'Path to the Unity Editor. If not provided, the action will look it up from the project-path or the environment variable UNITY_EDITOR_PATH.'

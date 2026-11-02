@@ -2,13 +2,19 @@ import path = require('path');
 import core = require('@actions/core');
 import {
     UnityEditor,
-    UnityHub,
+    UnityInstaller,
     UnityProject,
 } from '@rage-against-the-pixel/unity-cli';
+import { ClassifyFailure } from '@rage-against-the-pixel/unity-cli/dist/failure-markers';
 import { shellSplit } from './utils';
 
 async function main() {
     try {
+        // the official Unity CLI that launches the editor writes workflow commands and annotations in github format
+        if (process.env.GITHUB_ACTIONS === 'true' && !process.env.UNITY_FORMAT) {
+            process.env.UNITY_FORMAT = 'github';
+        }
+
         const args = shellSplit(core.getInput(`args`));
         const buildTarget = core.getInput(`build-target`);
 
@@ -33,8 +39,7 @@ async function main() {
             core.debug(`Unity Project Path:\n  > "${projectPath}"`);
 
             if (!unityEditor) {
-                const unityHub = new UnityHub();
-                unityEditor = await unityHub.GetEditor(unityProject.version);
+                unityEditor = await new UnityInstaller().GetEditor(unityProject.version);
             }
         }
 
@@ -58,7 +63,15 @@ async function main() {
             args: [...args]
         });
     } catch (error) {
-        core.setFailed(error.message);
+        // a seat limit or network failure gets a notice titled with its marker, so a rerun workflow can retry it
+        const message = error instanceof Error ? error.message : String(error);
+        const marker = ClassifyFailure(message);
+
+        if (marker) {
+            core.notice(`Retryable failure: ${message}`, { title: marker });
+        }
+
+        core.setFailed(message);
     }
 }
 

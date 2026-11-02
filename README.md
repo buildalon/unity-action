@@ -11,7 +11,6 @@ A Github Action to execute [Unity Editor command line arguments](https://docs.un
 ```yaml
 jobs:
   build:
-    env:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -23,7 +22,7 @@ jobs:
           - os: macos-latest
             build-target: StandaloneOSX
     steps:
-      - uses: buildalon/unity-action@v3
+      - uses: buildalon/unity-action@v4
         name: ${{ matrix.build-target }}-Build
         with:
           editor-path: path/to/your/unity/editor/installation
@@ -37,9 +36,11 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `editor-path` | The path to the unity editor installation you want to use to execute the arguments with. | If `UNITY_EDITOR_PATH` environment variable is not set. | `env.UNITY_EDITOR_PATH` |
+| `editor-path` | The path to the unity editor installation you want to use to execute the arguments with. When neither this nor `UNITY_EDITOR_PATH` is set, the editor is looked up from the project's Unity version. | If `UNITY_EDITOR_PATH`, `project-path` and `UNITY_PROJECT_PATH` are not set. | `env.UNITY_EDITOR_PATH` |
 | `project-path` | The path to the unity project you want to use when executing arguments. | If `UNITY_PROJECT_PATH` environment variable is not set, or if it isn't required for the command. | `env.UNITY_PROJECT_PATH` |
-| `build-target` | The build target to use when executing arguments. | false | |
-| `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. (Note: use `-force-graphics` to override auto-added `-nographics` argument) | true | `-quit -batchmode -nographics` |
-| `log-name` | The name of the log file to create when running the commands. | false | `Unity-yyyyMMddTHHmmss` |
+| `build-target` | The build target to use when executing arguments. Passed as `-buildTarget`. | false | |
+| `args` | The [arguments](https://docs.unity3d.com/Manual/EditorCommandLineArguments.html) to use when executing commands to the editor. `-batchmode` and `-nographics` are added when missing; use `-force-graphics` to skip `-nographics`. | false | `-quit -batchmode -nographics` |
+| `log-name` | The name of the log file, written as `<log-name>-<yyyyMMddTHHmmss>.log` in the project's `Builds/Logs` folder (or `Logs` in the workspace without a project). Skipped when `args` contains `-logFile`. | false | `Unity` |
+
+On GitHub Actions, `UNITY_FORMAT` defaults to `github` so the official Unity CLI writes annotations. When the run fails for a reason a rerun can fix, the action adds a notice titled `unity-license-exhausted` or `unity-transient-failure` for [retry-failed-jobs](https://github.com/buildalon/retry-failed-jobs).
 
