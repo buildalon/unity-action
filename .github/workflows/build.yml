@@ -7,6 +7,10 @@ on:
       matrix:
         required: true
         type: string
+      allow-security-alert:
+        required: false
+        type: boolean
+        default: false
     secrets:
       UNITY_USERNAME:
         required: true
@@ -27,6 +31,10 @@ jobs:
     timeout-minutes: ${{ matrix.build-target == 'Android' && 60 || 45 }}
     permissions:
       contents: read
+    env:
+      # the monthly run installs the older editors, which mostly carry a Unity Security Alert; the bundled unity-cli
+      # installs them with a warning instead of an error when this is set
+      UNITY_ALLOW_SECURITY_ALERT: ${{ inputs.allow-security-alert }}
     steps:
       # runs alongside checkout; the wait before the editor install joins it
       - name: Free Disk Space
@@ -57,7 +65,7 @@ jobs:
           set -euo pipefail
           npm ci
           npx --no-install unity-cli upm-install --json
-          npx --no-install unity-cli setup-unity --unity-version "${MATRIX_UNITY_VERSION}" --build-targets "${MATRIX_BUILD_TARGET}" --json
+          npx --no-install unity-cli setup-unity --unity-version "${MATRIX_UNITY_VERSION}" --build-targets "${MATRIX_BUILD_TARGET}" --channel f,b,a --json
       # macOS and Linux runners all report the same machine identity to Unity, so the license the license job activated
       # once for this run serves every macOS or Linux row; it arrives as an encrypted artifact and is never returned.
       # Without it, or when it no longer fits this machine, the row activates with the account. Windows runners are a
@@ -100,7 +108,7 @@ jobs:
         if: ${{ always() && steps.download-run-license.outcome == 'success' }}
         shell: bash
         run: rm -rf "${RUNNER_TEMP}/unity-license"
-      - uses: buildalon/create-unity-project@v3
+      - uses: buildalon/create-unity-project@v4
         id: unity-project
         with:
           project-name: Test Project
