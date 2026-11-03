@@ -11,10 +11,6 @@ on:
         required: false
         type: boolean
         default: false
-      alpha-streams:
-        required: false
-        type: string
-        default: '[]'
     secrets:
       UNITY_USERNAME:
         required: true
@@ -30,7 +26,7 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(inputs.matrix) }}
       fail-fast: false
-    continue-on-error: ${{ contains(fromJSON(inputs.alpha-streams), matrix.unity-version) }}
+    continue-on-error: ${{ matrix.prerelease == true }}
     runs-on: ${{ matrix.os }}
     # a hung editor or licensing call must not hold the matrix; Android rows build a player through Gradle and get more
     timeout-minutes: ${{ matrix.build-target == 'Android' && 60 || 45 }}

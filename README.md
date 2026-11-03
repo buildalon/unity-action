@@ -44,4 +44,4 @@ jobs:
 
 On GitHub Actions, `UNITY_FORMAT` defaults to `github` so the official Unity CLI writes annotations. When the run fails for a reason a rerun can fix, the action adds a notice titled `unity-license-exhausted` or `unity-transient-failure` for [retry-failed-jobs](https://github.com/buildalon/retry-failed-jobs).
 
-This repository's CI tests pull requests against the Unity streams the official Unity CLI lists, and a monthly run covers the older editor lines. Every Unity row reports as its own check, and rows on a stream that only has alpha releases report without failing the run.
+This repository's CI tests pull requests against the Unity streams the official Unity CLI lists, and a monthly run covers the older editor lines. Every Unity row reports as its own check, and rows on a stream with no final release yet (alpha or beta) report without failing the run.
