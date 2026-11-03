@@ -1,36 +1,34 @@
 name: validate
 on:
   schedule:
-    - cron: '0 8 23 * *' # monthly
+    - cron: '0 8 23 * *' # monthly: the older editors, which no longer change
   push:
     branches: ['main']
   pull_request:
     branches: ['*']
     types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+    inputs:
+      editors:
+        description: Which editors to test
+        type: choice
+        options: [unity-6-and-newer, legacy]
+        default: unity-6-and-newer
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # the monthly legacy run gets its own group, so a push to main does not cancel it
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'schedule' && 'legacy' || inputs.editors || 'unity-6-and-newer' }}
   cancel-in-progress: true
 jobs:
   setup:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: .github/
-      - uses: RageAgainstThePixel/job-builder@v1
-        id: setup-jobs
-        with:
-          build-options: ./.github/workflows/build-options.json
-          # one group per editor version; every group runs at once, since macOS and Linux rows share one seat per OS
-          # and Windows rows return theirs
-          group-by: 'unity-version'
-    outputs:
-      jobs: ${{ steps.setup-jobs.outputs.jobs }}
+    # pull requests and pushes test the streams Unity lists; the older editors run monthly or on demand. One group per
+    # editor version; every group runs at once, since macOS and Linux rows share one seat per OS and Windows rows
+    # return theirs
+    uses: RageAgainstThePixel/workflows/.github/workflows/unity-stream-matrix.yml@main
+    with:
+      legacy: ${{ inputs.editors == 'legacy' }}
   # One sign-in per OS for the whole run. macOS and Linux runners share one machine identity, so the license activated
   # here serves every macOS or Linux row of this run. It is passed on encrypted, because artifacts of a public
   # repository can be downloaded by anyone, and it is never returned: a return would revoke it for every job on that
@@ -106,6 +104,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       matrix: ${{ toJSON(matrix.jobs.matrix) }}
+      allow-security-alert: ${{ needs.setup.outputs.allow-security-alert == 'true' }}
   license-cleanup:
     needs: [license, validate]
     # a failed run may be retried by rerun-validate (3 attempts at most), and the license job is not rerun with the
