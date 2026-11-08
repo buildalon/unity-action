@@ -1,5 +1,5 @@
-import path = require('path');
-import core = require('@actions/core');
+import * as path from 'path';
+import * as core from '@actions/core';
 import {
     UnityEditor,
     UnityInstaller,
