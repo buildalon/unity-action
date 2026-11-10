@@ -26,6 +26,7 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(inputs.matrix) }}
       fail-fast: false
+    continue-on-error: ${{ matrix.prerelease == true }}
     runs-on: ${{ matrix.os }}
     # a hung editor or licensing call must not hold the matrix; Android rows build a player through Gradle and get more
     timeout-minutes: ${{ matrix.build-target == 'Android' && 60 || 45 }}
