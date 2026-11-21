@@ -1,6 +1,6 @@
 {
   "name": "unity-action",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "A Github Action to execute Unity Editor command line arguments.",
   "author": "buildalon",
   "repository": {
@@ -20,7 +20,7 @@
   "main": "dist/index.js",
   "dependencies": {
     "@actions/core": "^3.0.1",
-    "@rage-against-the-pixel/unity-cli": "^4.2.2"
+    "@rage-against-the-pixel/unity-cli": "^4.2.3"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
